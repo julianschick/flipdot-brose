@@ -11,6 +11,14 @@ FlipdotDisplay::~FlipdotDisplay() {
     delete state;
 }
 
+void FlipdotDisplay::init_by_test() {
+    clear();
+    light();
+    clear();
+    light();
+    clear();
+}
+
 void FlipdotDisplay::clear() {
     state->setAll(false);
     display_current_state();

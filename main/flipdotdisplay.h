@@ -12,6 +12,8 @@ public:
     FlipdotDisplay(FlipdotDriver* drv_);
     ~FlipdotDisplay();
 
+    void init_by_test();
+
     void clear();
     void light();
 

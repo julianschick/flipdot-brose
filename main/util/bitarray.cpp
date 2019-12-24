@@ -1,8 +1,8 @@
+#include "bitarray.h"
+
 #include <esp_log.h>
 #include <algorithm>
 #include <cstring>
-#include "bitarray.h"
-
 
 BitArray::BitArray(int size_) {
     size = size_;
@@ -81,6 +81,12 @@ void BitArray::copy_from(const BitArray& other) {
     }
 }
 
+void BitArray::copy_from(uint8_t* buffer, size_t len) {
+    size_t copy_len = MIN(len, data_size * 4);
+
+    xthal_memcpy(data, buffer, copy_len);
+}
+
 bool BitArray::transition_vector_to(const class BitArray & other, int8_t* transition_vector) {
     if (size != other.size) {
         return false;
@@ -112,7 +118,7 @@ bool BitArray::range_check(int index) const {
     bool ok = index >= 0 && index < size;
 
     if (!ok) {
-        ESP_LOGE(TAG_BITARRAY, "Array index out of bounds: %d.", index);
+        ESP_LOGW(TAG_BITARRAY, "BitArray index out of bounds: %d.", index);
     }
 
     return ok;

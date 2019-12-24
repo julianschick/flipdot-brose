@@ -1,22 +1,16 @@
-/* Hello World Example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include "esp_spi_flash.h"
-#include "driver/spi_master.h"
+#include "libs/globals.h"
 
 #include "ws2812_control.h"
 #include "util/bitarray.h"
 #include "lowlevel/flipdotdriver.h"
+#include "lowlevel/ws2812driver.h"
 #include "flipdotdisplay.h"
+
+#include "libs/nvs.h"
+#include "libs/blue.h"
+#include "libs/mdns.h"
+#include "libs/wifi.h"
+#include "libs/http_server.h"
 
 #define PIN_NUM_MOSI GPIO_NUM_13
 #define PIN_NUM_CLK  GPIO_NUM_14
@@ -83,10 +77,13 @@ void app_main() {
     pins.oe_sel = PIN_NUM_OE_SEL;
 
     flipdot_driver_timing_config_t timing;
-    timing.set_usecs = 400;
-    timing.reset_usecs = 400;
+    timing.set_usecs = 700;
+    timing.reset_usecs = 700;
 
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
+
+    ws2812_timing_config_t timing_config = {28, 72, 72, 28};
+    WS2812Driver* led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
 
     printf("Driver initialized!\n");
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -96,7 +93,22 @@ void app_main() {
     printf("Display initialized!\n");
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    BitArray* allOff = new BitArray(dsp->get_number_of_pixels());
+    Nvs::setup();
+    start_mdns_service();
+    Wifi::setup();
+    Blue::setup();
+    HttpServer::set_display(dsp);
+    HttpServer::start();
+
+    printf("Connections initialized!\n");
+
+    dsp->init_by_test();
+
+    color_t c = {{0xA0, 0x00, 0x00, 0x00}};
+    led_drv->set_all_colors(c);
+    led_drv->update();
+
+    /*BitArray* allOff = new BitArray(dsp->get_number_of_pixels());
     BitArray* firstOn = new BitArray(dsp->get_number_of_pixels());
     BitArray* secondOn = new BitArray(dsp->get_number_of_pixels());
     BitArray* thirdOn = new BitArray(dsp->get_number_of_pixels());
@@ -140,7 +152,7 @@ void app_main() {
         dsp->display_string("Wolkenthermik");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
 
-    }
+    }*/
 
     /*ws2812_control_init();
     vTaskDelay(1000 / portTICK_PERIOD_MS);

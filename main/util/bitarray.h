@@ -1,10 +1,7 @@
 #ifndef BITARRAY_H
 #define BITARRAY_H
 
-#include <stdint.h>
-#include "esp_system.h"
-
-#define TAG_BITARRAY "bitarray"
+#include "../libs/globals.h"
 
 class BitArray {
 
@@ -22,6 +19,8 @@ public:
     void set8(int index, uint8_t value);
 
     void copy_from(const BitArray& other);
+    void copy_from(uint8_t* buffer, size_t len);
+
     bool transition_vector_to(const class BitArray & other, int8_t* transition_vector);
 
 private:
