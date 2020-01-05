@@ -29,11 +29,12 @@ public:
 private:
     FlipdotDriver* drv;
     BitArray* state;
-    int8_t* transition;
+    bool state_unknown;
+
+    BitArray* transition_set;
+    BitArray* transition_reset;
 
     void display_current_state();
-
-
 
 };
 

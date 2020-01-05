@@ -16,9 +16,12 @@ namespace HttpServer {
             httpd_register_uri_handler(handle, &whoareyou);
             httpd_register_uri_handler(handle, &bitset_post);
             httpd_register_uri_handler(handle, &bitset_put);
-            //httpd_register_uri_handler(handle, &cmd_get);
-            //httpd_register_uri_handler(handle, &position_set);
+            httpd_register_uri_handler(handle, &led_post);
             httpd_register_uri_handler(handle, &reboot);
+
+            httpd_register_uri_handler(handle, &test_get);
+            //httpd_register_uri_handler(handle, &position_set);
+
             return;
         }
 
@@ -33,6 +36,10 @@ namespace HttpServer {
         display = display_;
     }
 
+    void set_led_driver(WS2812Driver* led_driver_) {
+        led_driver = led_driver_;
+    }
+
     PRIVATE_SYMBOLS
 
     inline string get_url(httpd_req_t* req) {
@@ -45,6 +52,37 @@ namespace HttpServer {
         }
     }
 
+    vector<uri_param_t> get_params(httpd_req_t* req) {
+        string uri = string(req->uri);
+        ESP_LOGI(TAG_HTTP, "uri = %s", uri.c_str());
+
+        size_t qm_index = uri.find_first_of("?");
+        if (qm_index != -1) {
+            string params = uri.substr(qm_index+1, uri.size() - qm_index);
+            vector<uri_param_t> result;
+
+            ESP_LOGI(TAG_HTTP, "params = %s", params.c_str());
+
+            stringstream ss(params);
+            string token;
+            while (getline(ss, token, '&')) {
+                size_t eq_index = token.find_first_of("=");
+
+                if (eq_index != -1) {
+                    uri_param_t param;
+                    param.name = token.substr(0, eq_index);
+                    param.value = token.substr(eq_index+1, token.size() - eq_index);
+                    result.push_back(param);
+                }
+            }
+
+            return result;
+
+        } else {
+            return vector<uri_param_t>();
+        }
+    }
+
     bool uri_matcher(const char *uri_template, const char *uri_to_match, size_t match_upto) {
         string uri(uri_to_match);
         uri = uri.substr(0, match_upto);
@@ -54,6 +92,13 @@ namespace HttpServer {
 
     inline void respond_200(httpd_req_t* req, string message) {
         const char* msg = message.c_str();
+        httpd_resp_set_type(req, "text/plain");
+        httpd_resp_send(req, msg, strlen(msg));
+    }
+
+    inline void respond_400(httpd_req_t* req, string message) {
+        const char* msg = message.c_str();
+        httpd_resp_set_status(req, "400");
         httpd_resp_set_type(req, "text/plain");
         httpd_resp_send(req, msg, strlen(msg));
     }
@@ -113,6 +158,38 @@ namespace HttpServer {
         return receive_and_display_bitset(req, true);
     }
 
+    esp_err_t led_post_handler(httpd_req_t *req) {
+        uint8_t content[16];
+        size_t recv_size = MIN(req->content_len, sizeof(content));
+
+        printf("content_len=%d\n", req->content_len);
+
+        int ret = httpd_req_recv(req, (char*) content, recv_size);
+        if (ret <= 0) {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            }
+            respond_500(req);
+            return ESP_FAIL;
+        }
+
+        if (recv_size < 3) {
+            respond_400(req, "Too few bytes\n");
+            return ESP_FAIL;
+        }
+
+        color_t color = {{content[1], content[0], content[2], 0x00}};
+        led_driver->set_all_colors(color);
+        respond_200(req, "OK\n");
+        return ESP_OK;
+    }
+
+    esp_err_t reboot_handler(httpd_req_t *req) {
+        respond_200(req, "REBOOT");
+        Comx::interpret("reboot");
+        return ESP_OK;
+    }
+
     esp_err_t cmd_get_handler(httpd_req_t *req) {
         string url = get_url(req);
 
@@ -126,6 +203,18 @@ namespace HttpServer {
         return ESP_OK;
     }
 
+    esp_err_t test_get_handler(httpd_req_t* req) {
+        vector<uri_param_t> params = get_params(req);
+
+        ESP_LOGI(TAG_HTTP, "params: %d", params.size());
+        for (int i = 0; i < params.size(); i++) {
+            ESP_LOGI(TAG_HTTP, "param extracted: %s = %s", params[i].name.c_str(), params[i].value.c_str());
+        }
+
+        respond_200(req, "GOOD");
+        return ESP_OK;
+    }
+
     esp_err_t position_set_handler(httpd_req_t *req) {
         string url = get_url(req);
 
@@ -136,12 +225,6 @@ namespace HttpServer {
         } else {
             respond_500(req);
         }
-        return ESP_OK;
-    }
-
-    esp_err_t reboot_handler(httpd_req_t *req) {
-        respond_200(req, "REBOOT");
-        Comx::interpret("reboot");
         return ESP_OK;
     }
 

@@ -10,14 +10,21 @@
 //#include <nvs_flash.h>
 //#include <sys/param.h>
 #include <esp_http_server.h>
+#include <vector>
 
 #include "../flipdotdisplay.h";
+#include "../lowlevel/ws2812driver.h"
 
 namespace HttpServer {
 
     using namespace std;
 
 	PRIVATE_SYMBOLS
+
+        struct uri_param_t {
+            string name;
+            string value;
+        };
 
         httpd_handle_t handle;
 
@@ -31,7 +38,7 @@ namespace HttpServer {
 
         esp_err_t bitset_post_handler(httpd_req_t *req);
         httpd_uri_t bitset_post = {
-            .uri       = "/bitset",
+            .uri       = "/bitset/?",
             .method    = HTTP_POST,
             .handler   = bitset_post_handler,
             .user_ctx  = NULL
@@ -39,9 +46,25 @@ namespace HttpServer {
 
         esp_err_t bitset_put_handler(httpd_req_t *req);
         httpd_uri_t bitset_put = {
-                .uri       = "/bitset",
+                .uri       = "/bitset/?",
                 .method    = HTTP_PUT,
                 .handler   = bitset_put_handler,
+                .user_ctx  = NULL
+        };
+
+        esp_err_t led_post_handler(httpd_req_t *req);
+        httpd_uri_t led_post = {
+                .uri       = "/led/?",
+                .method    = HTTP_POST,
+                .handler   = led_post_handler,
+                .user_ctx  = NULL
+        };
+
+        esp_err_t test_get_handler(httpd_req_t *req);
+        httpd_uri_t test_get = {
+                .uri       = "/test",
+                .method    = HTTP_GET,
+                .handler   = test_get_handler,
                 .user_ctx  = NULL
         };
 
@@ -71,18 +94,20 @@ namespace HttpServer {
 
         bool uri_matcher(const char *uri_template, const char *uri_to_match, size_t match_upto);
         inline string get_url(httpd_req_t* req);
+        vector<uri_param_t> get_params(httpd_req_t* req);
 
         inline void respond_200(httpd_req_t* req, string message);
         inline void respond_500(httpd_req_t* req);
 
         FlipdotDisplay* display;
+        WS2812Driver* led_driver;
 
 	PRIVATE_END
-
 
 	void start();
     void stop();    
     void set_display(FlipdotDisplay* display_);
+    void set_led_driver(WS2812Driver* led_driver_);
 }
 
 #endif //HTTP_SERVER_H_

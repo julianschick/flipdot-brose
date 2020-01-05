@@ -36,33 +36,6 @@ extern "C" {
     void app_main(void);
 }
 
-void app_main_2() {
-    BitArray* bits1 = new BitArray(10);
-    BitArray* bits2 = new BitArray(10);
-
-    bits1->set(2, true);
-    bits1->set(3, true);
-    bits1->set(8, true);
-    bits2->set(0, true);
-
-    int8_t* diff = new int8_t[10];
-    bits1->transition_vector_to(*bits2, diff);
-
-    for (int i = 0; i < 10; i++) {
-        printf("%d\n", diff[i]);
-    }
-
-    bits2->transition_vector_to(*bits1, diff);
-
-    for (int i = 0; i < 10; i++) {
-        printf("%d\n", diff[i]);
-    }
-
-    while(true) {
-        vTaskDelay(1);
-    }
-}
-
 void app_main() {
     gpio_set_level(PIN_NUM_OE_CONF, 1);
     safety_init();
@@ -98,6 +71,7 @@ void app_main() {
     Wifi::setup();
     Blue::setup();
     HttpServer::set_display(dsp);
+    HttpServer::set_led_driver(led_drv);
     HttpServer::start();
 
     printf("Connections initialized!\n");
@@ -107,6 +81,8 @@ void app_main() {
     color_t c = {{0xA0, 0x00, 0x00, 0x00}};
     led_drv->set_all_colors(c);
     led_drv->update();
+
+    printf("Init done!\n");
 
     /*BitArray* allOff = new BitArray(dsp->get_number_of_pixels());
     BitArray* firstOn = new BitArray(dsp->get_number_of_pixels());

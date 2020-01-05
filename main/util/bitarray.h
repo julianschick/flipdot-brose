@@ -6,30 +6,49 @@
 class BitArray {
 
 public:
-    BitArray(int size_);
-
+    BitArray(int size);
     BitArray(const BitArray &other);
-
     ~BitArray();
 
-    bool get(int index) const;
-    void set(int index, bool value);
-    void setAll(bool value);
+    bool operator[](size_t index) const;
+    bool get(size_t index) const;
 
-    void set8(int index, uint8_t value);
+    bool all();
+    bool none();
+    bool any();
+
+    void set();
+    void set(size_t index);
+    void set(size_t index, bool value);
+
+    void reset();
+    void reset(size_t index);
+
+    void flip();
+    void flip(size_t index);
+
+    void set8(size_t index, uint8_t value);
 
     void copy_from(const BitArray& other);
-    void copy_from(uint8_t* buffer, size_t len);
+    void copy_from(uint8_t* buffer, size_t bytes);
 
-    bool transition_vector_to(const class BitArray & other, int8_t* transition_vector);
+    bool transition_vector_to(const class BitArray& other, BitArray& set_vector, BitArray& reset_vector);
+
+    std::string to_string() const;
 
 private:
-    uint32_t masks[32];
+    size_t size;
+    size_t data_size_32;
+    size_t data_size_8;
 
-    int size;
-    int data_size;
-    uint32_t* data;
+    uint32_t* data_ptr_32;
+    uint8_t* data_ptr_8;
+    uint32_t last_mask_32;
+    uint8_t last_mask_8;
 
+    void set_(bool value);
+    inline uint32_t mask32(size_t index) const;
+    inline uint8_t mask8(size_t index) const;
     inline bool range_check(int index) const;
 
 };
