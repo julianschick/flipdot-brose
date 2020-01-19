@@ -1,10 +1,10 @@
 #include "wifi.h"
 
 #include <string.h>
-#include "esp_event_loop.h"
-
-#include "nvs.h"
+#include <esp_event_loop.h>
+#include <esp_log.h>
 #include <mdns.h>
+#include "nvs.h"
 
 const uint32_t Wifi::SBIT_CONNECTED;
 const uint32_t Wifi::SBIT_ACTIVE;

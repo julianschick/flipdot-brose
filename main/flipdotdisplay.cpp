@@ -1,9 +1,18 @@
 #include "flipdotdisplay.h"
 
+#include <vector>
+#include <esp_log.h>
+
+#include "font/octafont-regular.h"
+#include "font/octafont-bold.h"
+#include "util/util.h"
+
 FlipdotDisplay::FlipdotDisplay(FlipdotDriver *drv_) {
     drv = drv_;
     state = new BitArray(drv->get_number_of_pixels());
     state_unknown = true;
+    cmap = new PixelMap(drv->get_width(), drv->get_height(), true);
+
     transition_set = new BitArray(drv->get_number_of_pixels());
     transition_reset = new BitArray(drv->get_number_of_pixels());
 }
@@ -59,23 +68,52 @@ void FlipdotDisplay::display_incrementally(const BitArray &new_state) {
     }
 }
 
-void FlipdotDisplay::display_string(std::string s) {
+void FlipdotDisplay::display_string(std::string s, TextAlignment alignment, DisplayMode display_mode) {
     BitArray new_state (drv->get_number_of_pixels());
 
-    int x = 0;
+    PixelCoord coords = {0, 0};
+    PixelFont* font = new OctafontBold();
+
+    std::vector<std::string> lines = split(s, '\n');
+
+    for (int i = 0; i < lines.size() && i < 2; i++) {
+        ESP_LOGI("display", "line = %s", lines[i].c_str());
+        std::string& line = lines[i];
+    }
+
     for (int i = 0; i < s.size(); i++) {
-        const uint8_t* cptr = &font_data[s[i] * 5];
+        char c = s[i];
 
-        for (int j = 0; j < 5; j++) {
-            new_state.set8((x++)*16, *(cptr + j));
-        }
+        if (c == 32) {
+            coords.x += 2;
+            if (coords.x >= drv->get_width()) {
+                coords.x = 0;
+                coords.y += 8;
+            }
+        } else if (font->has_char(c)) {
 
-        if (i < s.size() - 1) {
-            x++;
+            int width = font->get_width(c);
+
+            ESP_LOGI("display", "char %d at %d, width = %d", c, coords.x, width);
+
+            if (coords.x + width + 1 > drv->get_width()) {
+                coords.x = 0;
+                coords.y += 8;
+            }
+
+            if (coords.x != 0) {
+                coords.x++;
+            }
+
+            for (size_t j = 0; j < width; j++) {
+                new_state.set8(cmap->index(coords), font->get_octet(c, j));
+                coords.x++;
+            }
         }
     }
 
     display_overriding(new_state);
+    delete font;
 }
 
 void FlipdotDisplay::display_current_state() {

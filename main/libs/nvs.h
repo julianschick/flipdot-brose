@@ -1,7 +1,7 @@
 #ifndef NVS_H_
 #define NVS_H_
 
-#include "globals.h"
+#include "../globals.h"
 
 #include "nvs.h"
 #include "nvs_flash.h"

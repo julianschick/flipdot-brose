@@ -1,7 +1,7 @@
 #ifndef WIFI_H_
 #define WIFI_H_
 
-#include "globals.h"
+#include "../globals.h"
 
 //#include <string.h>
 //#include "freertos/FreeRTOS.h"

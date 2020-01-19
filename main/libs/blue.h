@@ -1,7 +1,7 @@
 #ifndef BLUETOOTH_H_INCLUDED
 #define BLUETOOTH_H_INCLUDED
 
-#include "globals.h"
+#include "../globals.h"
 
 #include "esp_bt.h"
 #include "esp_bt_main.h"

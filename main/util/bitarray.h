@@ -1,7 +1,7 @@
 #ifndef BITARRAY_H
 #define BITARRAY_H
 
-#include "../libs/globals.h"
+#include "../globals.h"
 
 class BitArray {
 

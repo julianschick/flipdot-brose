@@ -1,6 +1,7 @@
 #include "http_server.h"
 
 #include <regex>
+#include <esp_log.h>
 #include "comx.h"
 #include "../util/bitarray.h"
 
@@ -16,6 +17,7 @@ namespace HttpServer {
             httpd_register_uri_handler(handle, &whoareyou);
             httpd_register_uri_handler(handle, &bitset_post);
             httpd_register_uri_handler(handle, &bitset_put);
+            httpd_register_uri_handler(handle, &message_post);
             httpd_register_uri_handler(handle, &led_post);
             httpd_register_uri_handler(handle, &reboot);
 
@@ -158,11 +160,32 @@ namespace HttpServer {
         return receive_and_display_bitset(req, true);
     }
 
+    esp_err_t message_post_handler(httpd_req_t *req) {
+        char content[256];
+        size_t recv_size = MIN(req->content_len, sizeof(content)-1);
+
+        int ret = httpd_req_recv(req, content, recv_size);
+        if (ret <= 0) {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            }
+            respond_500(req);
+            return ESP_FAIL;
+        }
+
+        content[recv_size] = 0x00;
+
+        std::string str (content);
+        ESP_LOGI(TAG_HTTP, "%s", content);
+        respond_200(req, "OK\n");
+
+        display->display_string(str);
+        return ESP_OK;
+    }
+
     esp_err_t led_post_handler(httpd_req_t *req) {
         uint8_t content[16];
         size_t recv_size = MIN(req->content_len, sizeof(content));
-
-        printf("content_len=%d\n", req->content_len);
 
         int ret = httpd_req_recv(req, (char*) content, recv_size);
         if (ret <= 0) {
@@ -178,8 +201,9 @@ namespace HttpServer {
             return ESP_FAIL;
         }
 
-        color_t color = {{content[1], content[0], content[2], 0x00}};
+        color_t color = {{content[2], content[0], content[1], 0x00}};
         led_driver->set_all_colors(color);
+        led_driver->update();
         respond_200(req, "OK\n");
         return ESP_OK;
     }
@@ -206,9 +230,9 @@ namespace HttpServer {
     esp_err_t test_get_handler(httpd_req_t* req) {
         vector<uri_param_t> params = get_params(req);
 
-        ESP_LOGI(TAG_HTTP, "params: %d", params.size());
+        ESP_LOGD(TAG_HTTP, "params: %d", params.size());
         for (int i = 0; i < params.size(); i++) {
-            ESP_LOGI(TAG_HTTP, "param extracted: %s = %s", params[i].name.c_str(), params[i].value.c_str());
+            ESP_LOGD(TAG_HTTP, "param extracted: %s = %s", params[i].name.c_str(), params[i].value.c_str());
         }
 
         respond_200(req, "GOOD");

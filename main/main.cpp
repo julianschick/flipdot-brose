@@ -1,6 +1,5 @@
-#include "libs/globals.h"
+#include "globals.h"
 
-#include "ws2812_control.h"
 #include "util/bitarray.h"
 #include "lowlevel/flipdotdriver.h"
 #include "lowlevel/ws2812driver.h"
@@ -78,7 +77,7 @@ void app_main() {
 
     dsp->init_by_test();
 
-    color_t c = {{0xA0, 0x00, 0x00, 0x00}};
+    color_t c = {{0x05, 0x10, 0x10, 0x00}};
     led_drv->set_all_colors(c);
     led_drv->update();
 

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <sstream>
 #include <iostream>
+#include <esp_log.h>
 
 BitArray::BitArray(int size) : size(size) {
     data_size_32 = (size / 32) + (size % 32 ? 1 : 0);

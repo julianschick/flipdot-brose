@@ -1,7 +1,7 @@
 #ifndef COMX_H_
 #define COMX_H_
 
-#include "globals.h"
+#include "../globals.h"
 
 #include <vector>
 #include <algorithm>

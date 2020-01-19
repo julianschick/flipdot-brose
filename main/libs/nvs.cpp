@@ -1,5 +1,7 @@
 #include "nvs.h"
 
+#include <esp_log.h>
+
 namespace Nvs {
 
 	void setup() {

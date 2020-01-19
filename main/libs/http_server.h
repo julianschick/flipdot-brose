@@ -1,7 +1,7 @@
 #ifndef HTTP_SERVER_H_
 #define HTTP_SERVER_H_
 
-#include "globals.h"
+#include "../globals.h"
 
 //#include <esp_wifi.h>
 //#include <esp_event_loop.h>
@@ -12,7 +12,7 @@
 #include <esp_http_server.h>
 #include <vector>
 
-#include "../flipdotdisplay.h";
+#include "../flipdotdisplay.h"
 #include "../lowlevel/ws2812driver.h"
 
 namespace HttpServer {
@@ -49,6 +49,14 @@ namespace HttpServer {
                 .uri       = "/bitset/?",
                 .method    = HTTP_PUT,
                 .handler   = bitset_put_handler,
+                .user_ctx  = NULL
+        };
+
+        esp_err_t message_post_handler(httpd_req_t *req);
+        httpd_uri_t message_post = {
+                .uri       = "/message/?",
+                .method    = HTTP_POST,
+                .handler   = message_post_handler,
                 .user_ctx  = NULL
         };
 

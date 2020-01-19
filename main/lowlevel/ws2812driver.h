@@ -1,20 +1,20 @@
 #ifndef WS2812DRIVER_H
 #define WS2812DRIVER_H
 
-#include "../libs/globals.h"
+#include "../globals.h"
 #include "driver/rmt.h"
 
 #define BIT_PER_LED 24
 
 typedef struct {
-    uint8_t green;
-    uint8_t red;
     uint8_t blue;
+    uint8_t red;
+    uint8_t green;
     uint8_t padding;
 } color_field_t;
 
 union color_t {
-    color_field_t grb;
+    color_field_t brg;
     uint32_t bits;
 };
 

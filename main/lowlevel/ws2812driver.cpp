@@ -1,9 +1,13 @@
 #include "ws2812driver.h"
 
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#include "esp_log.h"
+
 WS2812Driver::WS2812Driver(gpio_num_t pin, rmt_channel_t rmt_channel, ws2812_timing_config_t& timing_config, size_t led_count)
     : pin(pin), rmt_channel(rmt_channel), timing_config(timing_config), led_count(led_count)
 {
     init_rmt();
+    ESP_LOGD(TAG_LED, "RMT subdevice for LED driver initialized");
 
     black = {{0x00, 0x00, 0x00, 0x00}};
     state = new color_t[led_count];
@@ -41,10 +45,13 @@ void WS2812Driver::set_color(size_t led, color_t& color) {
         return;
     }
 
+    ESP_LOGD(TAG_LED, "Setting LED %d to color rgb(%d, %d, %d)", led, color.brg.red, color.brg.green, color.brg.blue);
     state[led] = color;
 }
 
 void WS2812Driver::set_all_colors(color_t& color) {
+    ESP_LOGD(TAG_LED, "Setting all LEDs to color rgb(%d, %d, %d)", color.brg.red, color.brg.green, color.brg.blue);
+
     for (size_t i = 0; i < led_count; i++) {
         state[i] = color;
     }
@@ -60,6 +67,7 @@ color_t WS2812Driver::get_color(size_t led) {
 }
 
 void WS2812Driver::clear() {
+    ESP_LOGD(TAG_LED, "Clearing all LEDs");
     for (size_t i = 0; i < led_count; i++) {
         state[i] = black;
     }
@@ -67,10 +75,11 @@ void WS2812Driver::clear() {
 }
 
 bool WS2812Driver::range_check(size_t led) {
-    return led >= 0 && led < led_count;
+    return led < led_count;
 }
 
 void WS2812Driver::update() {
+    ESP_LOGD(TAG_LED, "Effectively updating LEDs");
     setup_tx_buf();
     ESP_ERROR_CHECK(rmt_write_items(rmt_channel, tx_buf, led_count * BIT_PER_LED, false));
     ESP_ERROR_CHECK(rmt_wait_tx_done(rmt_channel, portMAX_DELAY));

@@ -14,9 +14,6 @@
 #include "freertos/event_groups.h"
 #include "freertos/semphr.h"
 
-// Logging
-#include "esp_log.h"
-
 // Log Tags
 #define TAG_WIFI "wlan"
 #define TAG_BT "bluetooth"
