@@ -18,6 +18,9 @@ public:
     void coords(size_t index, size_t& x, size_t& y);
     PixelCoord coords(size_t index);
 
+    size_t get_width() { return width; };
+    size_t get_height() { return height; };
+
 private:
     size_t width;
     size_t height;

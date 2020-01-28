@@ -1,20 +1,19 @@
 #ifndef FLIPDOTDISPLAY_H
 #define FLIPDOTDISPLAY_H
 
-#include "util/bitarray.h"
-#include "util/pixelmap.h"
-#include "lowlevel/flipdotdriver.h"
 #include <string>
 
-enum TextAlignment {
-    LEFT, RIGHT, CENTERED
-};
-
-enum DisplayMode {
-    INCREMENTAL, OVERRIDE
-};
+#include "util/bitarray.h"
+#include "util/pixelmap.h"
+#include "util/pixelstring.h"
+#include "lowlevel/flipdotdriver.h"
 
 class FlipdotDisplay {
+
+public:
+    enum DisplayMode {
+        INCREMENTAL, OVERRIDE
+    };
 
 public:
     FlipdotDisplay(FlipdotDriver* drv_);
@@ -25,10 +24,8 @@ public:
     void clear();
     void light();
 
-    void display_overriding(const BitArray& new_state);
-    void display_incrementally(const BitArray& new_state);
-
-    void display_string(std::string s, TextAlignment alignment = LEFT, DisplayMode display_mode = OVERRIDE);
+    void display(const BitArray& new_state, DisplayMode mode = OVERRIDE);
+    void display_string(std::string s, PixelString::TextAlignment alignment = PixelString::LEFT, DisplayMode display_mode = OVERRIDE);
 
     inline int get_width() { return drv->get_width(); };
     inline int get_height() { return drv->get_height(); };

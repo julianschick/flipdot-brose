@@ -41,79 +41,54 @@ void FlipdotDisplay::light() {
     display_current_state();
 }
 
-void FlipdotDisplay::display_overriding(const BitArray &new_state) {
-    state->copy_from(new_state);
-    display_current_state();
-}
+void FlipdotDisplay::display(const BitArray &new_state, DisplayMode mode) {
+    if (state_unknown || mode == OVERRIDE) {
+        state->copy_from(new_state);
+        display_current_state();
+    } else {
+        state->transition_vector_to(new_state, *transition_set, *transition_reset);
+        state->copy_from(new_state);
 
-void FlipdotDisplay::display_incrementally(const BitArray &new_state) {
-    if (state_unknown) {
-        display_overriding(new_state);
-        return;
-    }
+        for (size_t x = 0; x < drv->get_width(); x++) {
+            for (size_t y = 0; y < drv->get_height(); y++) {
+                size_t idx =  x * drv->get_height() + y;
 
-    state->transition_vector_to(new_state, *transition_set, *transition_reset);
-    state->copy_from(new_state);
-
-    for (size_t x = 0; x < drv->get_width(); x++) {
-        for (size_t y = 0; y < drv->get_height(); y++) {
-            size_t idx =  x * drv->get_height() + y;
-
-            if ((*transition_set)[idx]) {
-                drv->flip(x, y, true);
-            } else if ((*transition_reset)[idx]) {
-                drv->flip(x, y, false);
+                if ((*transition_set)[idx]) {
+                    drv->flip(x, y, true);
+                } else if ((*transition_reset)[idx]) {
+                    drv->flip(x, y, false);
+                }
             }
         }
     }
+
+    PixelMap pixmap (drv->get_width(), drv->get_height(), true);
+    for (size_t y = 0; y < drv->get_height(); y++) {
+        string s = "";
+        for (size_t x = 0; x < drv->get_width(); x++) {
+            s += state->get(pixmap.index(x, y)) ? "x" : " ";
+        }
+        printf("|%s|\n", s.c_str());
+    }
+
+    printf("display done\n");
+
 }
 
-void FlipdotDisplay::display_string(std::string s, TextAlignment alignment, DisplayMode display_mode) {
+void FlipdotDisplay::display_string(std::string s, PixelString::TextAlignment alignment, DisplayMode display_mode) {
     BitArray new_state (drv->get_number_of_pixels());
 
-    PixelCoord coords = {0, 0};
-    PixelFont* font = new OctafontBold();
+    PixelString pixel_string(s);
+    PixelMap pixmap (drv->get_width(), drv->get_height(), true);
 
-    std::vector<std::string> lines = split(s, '\n');
+    PixelFont* font_regular = new OctafontRegular();
+    PixelFont* font_bold = new OctafontBold();
 
-    for (int i = 0; i < lines.size() && i < 2; i++) {
-        ESP_LOGI("display", "line = %s", lines[i].c_str());
-        std::string& line = lines[i];
-    }
+    pixel_string.print(new_state, pixmap, *font_regular, *font_bold, alignment);
+    display(new_state, display_mode);
 
-    for (int i = 0; i < s.size(); i++) {
-        char c = s[i];
-
-        if (c == 32) {
-            coords.x += 2;
-            if (coords.x >= drv->get_width()) {
-                coords.x = 0;
-                coords.y += 8;
-            }
-        } else if (font->has_char(c)) {
-
-            int width = font->get_width(c);
-
-            ESP_LOGI("display", "char %d at %d, width = %d", c, coords.x, width);
-
-            if (coords.x + width + 1 > drv->get_width()) {
-                coords.x = 0;
-                coords.y += 8;
-            }
-
-            if (coords.x != 0) {
-                coords.x++;
-            }
-
-            for (size_t j = 0; j < width; j++) {
-                new_state.set8(cmap->index(coords), font->get_octet(c, j));
-                coords.x++;
-            }
-        }
-    }
-
-    display_overriding(new_state);
-    delete font;
+    delete font_regular;
+    delete font_bold;
 }
 
 void FlipdotDisplay::display_current_state() {

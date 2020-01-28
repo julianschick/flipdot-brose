@@ -60,6 +60,14 @@ namespace HttpServer {
                 .user_ctx  = NULL
         };
 
+        esp_err_t message_put_handler(httpd_req_t *req);
+        httpd_uri_t message_put = {
+                .uri       = "/message/?",
+                .method    = HTTP_PUT,
+                .handler   = message_put_handler,
+                .user_ctx  = NULL
+        };
+
         esp_err_t led_post_handler(httpd_req_t *req);
         httpd_uri_t led_post = {
                 .uri       = "/led/?",
@@ -102,6 +110,7 @@ namespace HttpServer {
 
         bool uri_matcher(const char *uri_template, const char *uri_to_match, size_t match_upto);
         inline string get_url(httpd_req_t* req);
+        esp_err_t read_content(httpd_req_t* req, char* buffer, size_t len, size_t* actual_length);
         vector<uri_param_t> get_params(httpd_req_t* req);
 
         inline void respond_200(httpd_req_t* req, string message);

@@ -18,12 +18,11 @@ namespace HttpServer {
             httpd_register_uri_handler(handle, &bitset_post);
             httpd_register_uri_handler(handle, &bitset_put);
             httpd_register_uri_handler(handle, &message_post);
+            httpd_register_uri_handler(handle, &message_put);
             httpd_register_uri_handler(handle, &led_post);
             httpd_register_uri_handler(handle, &reboot);
-
             httpd_register_uri_handler(handle, &test_get);
             //httpd_register_uri_handler(handle, &position_set);
-
             return;
         }
 
@@ -51,6 +50,25 @@ namespace HttpServer {
             return result.substr(0, qm_index);
         } else {
             return result;
+        }
+    }
+
+    esp_err_t read_content(httpd_req_t* req, char* buffer, size_t len, size_t* actual_length) {
+        size_t recv_size = MIN(req->content_len, len);
+
+        printf("content_len=%d\n", req->content_len);
+
+        int ret = httpd_req_recv(req, buffer, recv_size);
+        if (ret <= 0) {
+            *actual_length = 0;
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            }
+            respond_500(req);
+            return ESP_FAIL;
+        } else {
+            *actual_length = ret;
+            return ESP_OK;
         }
     }
 
@@ -117,70 +135,74 @@ namespace HttpServer {
         return ESP_OK;
     }
 
-    esp_err_t receive_and_display_bitset(httpd_req_t *req, bool incremental) {
-        uint8_t content[256];
-        size_t recv_size = MIN(req->content_len, sizeof(content));
-
-        printf("content_len=%d\n", req->content_len);
-
-        int ret = httpd_req_recv(req, (char*) content, recv_size);
-        if (ret <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                httpd_resp_send_408(req);
-            }
-            respond_500(req);
+    esp_err_t receive_and_display_bitset(httpd_req_t *req, FlipdotDisplay::DisplayMode display_mode) {
+        char content[256];
+        size_t content_size = 0;
+        if (read_content(req, content, sizeof(content) - 1, &content_size) != ESP_OK) {
             return ESP_FAIL;
         }
 
         printf("bitset pushed:\n");
 
-        for (int i = 0; i < recv_size; i++) {
+        for (int i = 0; i < content_size; i++) {
             printf("byte %d = %#02x\n", i, content[i]);
         }
 
         BitArray bits (display->get_number_of_pixels());
-        bits.copy_from(content, recv_size);
+        bits.copy_from((uint8_t*) content, content_size);
 
-        if (incremental) {
-            display->display_incrementally(bits);
-        } else {
-            display->display_overriding(bits);
-        }
-
+        display->display(bits, display_mode);
         respond_200(req, "OK\n");
 
         return ESP_OK;
     }
 
     esp_err_t bitset_post_handler(httpd_req_t *req) {
-        return receive_and_display_bitset(req, false);
+        return receive_and_display_bitset(req, FlipdotDisplay::OVERRIDE);
     }
 
     esp_err_t bitset_put_handler(httpd_req_t *req) {
-        return receive_and_display_bitset(req, true);
+        return receive_and_display_bitset(req, FlipdotDisplay::INCREMENTAL);
     }
 
-    esp_err_t message_post_handler(httpd_req_t *req) {
+    esp_err_t receive_and_display_message(httpd_req_t *req, FlipdotDisplay::DisplayMode display_mode) {
         char content[256];
-        size_t recv_size = MIN(req->content_len, sizeof(content)-1);
-
-        int ret = httpd_req_recv(req, content, recv_size);
-        if (ret <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                httpd_resp_send_408(req);
-            }
-            respond_500(req);
+        size_t content_size = 0;
+        if (read_content(req, content, sizeof(content) - 1, &content_size) != ESP_OK) {
             return ESP_FAIL;
         }
 
-        content[recv_size] = 0x00;
+        PixelString::TextAlignment alignment = PixelString::LEFT;
+        vector<uri_param_t> params = get_params(req);
+        for (int i = 0; i < params.size(); i++) {
+            string& name = params[i].name;
+            string& value = params[i].value;
+
+            if (name == "alignment") {
+                if (value == "right") {
+                    alignment = PixelString::RIGHT;
+                } else if (value == "centered") {
+                    alignment = PixelString::CENTERED;
+                }
+            }
+        }
+
+        content[content_size] = 0x00;
 
         std::string str (content);
         ESP_LOGI(TAG_HTTP, "%s", content);
         respond_200(req, "OK\n");
 
-        display->display_string(str);
+        display->display_string(str, alignment, display_mode);
         return ESP_OK;
+    }
+
+    esp_err_t message_post_handler(httpd_req_t *req) {
+        return receive_and_display_message(req, FlipdotDisplay::OVERRIDE);
+    }
+
+    esp_err_t message_put_handler(httpd_req_t *req) {
+        return receive_and_display_message(req, FlipdotDisplay::INCREMENTAL);
     }
 
     esp_err_t led_post_handler(httpd_req_t *req) {
