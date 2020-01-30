@@ -1,15 +1,14 @@
 #include "globals.h"
 
-#include "util/bitarray.h"
 #include "lowlevel/flipdotdriver.h"
 #include "lowlevel/ws2812driver.h"
-#include "flipdotdisplay.h"
 
 #include "libs/nvs.h"
 #include "libs/blue.h"
 #include "libs/mdns.h"
 #include "libs/wifi.h"
 #include "libs/http_server.h"
+#include "libs/udp_server.h"
 
 #define PIN_NUM_MOSI GPIO_NUM_13
 #define PIN_NUM_CLK  GPIO_NUM_14
@@ -19,6 +18,9 @@
 #define PIN_NUM_RCLK_CONF GPIO_NUM_5
 #define PIN_NUM_OE_SEL GPIO_NUM_17
 #define PIN_NUM_OE_CONF GPIO_NUM_16
+
+FlipdotDisplay* dsp;
+WS2812Driver* led_drv;
 
 inline void safety_init() {
     gpio_config_t io_conf;
@@ -55,12 +57,12 @@ void app_main() {
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
 
     ws2812_timing_config_t timing_config = {28, 72, 72, 28};
-    WS2812Driver* led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
+    led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
 
     printf("Driver initialized!\n");
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    FlipdotDisplay *dsp = new FlipdotDisplay(drv);
+    dsp = new FlipdotDisplay(drv);
 
     printf("Display initialized!\n");
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -69,9 +71,12 @@ void app_main() {
     start_mdns_service();
     Wifi::setup();
     Blue::setup();
+
     HttpServer::set_display(dsp);
     HttpServer::set_led_driver(led_drv);
     HttpServer::start();
+
+    xTaskCreate(udp_server_task, "udp_server", 4096, NULL, 5, NULL);
 
     printf("Connections initialized!\n");
 

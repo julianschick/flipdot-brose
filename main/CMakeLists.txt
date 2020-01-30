@@ -8,6 +8,7 @@ set(
         "libs/wifi.cpp"
         "libs/nvs.cpp"
         "libs/http_server.cpp"
+        "libs/udp_server.cpp"
         "libs/comx.cpp"
         "libs/blue.cpp"
         "util/pixelmap.cpp"

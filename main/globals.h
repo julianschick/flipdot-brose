@@ -18,6 +18,7 @@
 #define TAG_WIFI "wlan"
 #define TAG_BT "bluetooth"
 #define TAG_HTTP "http"
+#define TAG_UDP "udp"
 #define TAG_NVS "nvs"
 #define TAG_BITARRAY "bitarray"
 #define TAG_LED "led"

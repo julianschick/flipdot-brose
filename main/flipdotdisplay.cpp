@@ -81,14 +81,11 @@ void FlipdotDisplay::display_string(std::string s, PixelString::TextAlignment al
     PixelString pixel_string(s);
     PixelMap pixmap (drv->get_width(), drv->get_height(), true);
 
-    PixelFont* font_regular = new OctafontRegular();
-    PixelFont* font_bold = new OctafontBold();
+    OctafontRegular font_regular;
+    OctafontBold font_bold;
 
-    pixel_string.print(new_state, pixmap, *font_regular, *font_bold, alignment);
+    pixel_string.print(new_state, pixmap, dynamic_cast<PixelFont&>(font_regular),dynamic_cast<PixelFont&>(font_bold), alignment);
     display(new_state, display_mode);
-
-    delete font_regular;
-    delete font_bold;
 }
 
 void FlipdotDisplay::display_current_state() {
