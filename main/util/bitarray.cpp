@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <cstring>
-#include <sstream>
-#include <iostream>
+
+#define TAG "bitarray"
 #include <esp_log.h>
 
 BitArray::BitArray(int size) : size(size) {
@@ -222,7 +222,7 @@ bool BitArray::range_check(int index) const {
     bool ok = index >= 0 && index < size;
 
     if (!ok) {
-        ESP_LOGW(TAG_BITARRAY, "BitArray index out of bounds: %d.", index);
+        ESP_LOGW(TAG, "BitArray index out of bounds: %d.", index);
     }
 
     return ok;

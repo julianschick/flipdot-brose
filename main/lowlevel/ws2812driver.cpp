@@ -1,6 +1,6 @@
 #include "ws2812driver.h"
 
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #define TAG "ws2812-driver"
 #include "esp_log.h"
 
