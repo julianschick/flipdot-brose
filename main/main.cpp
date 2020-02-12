@@ -15,9 +15,9 @@
 
 #define PIN_NUM_CLR GPIO_NUM_19
 #define PIN_NUM_RCLK_SEL GPIO_NUM_18
-#define PIN_NUM_RCLK_CONF GPIO_NUM_5
-#define PIN_NUM_OE_SEL GPIO_NUM_17
-#define PIN_NUM_OE_CONF GPIO_NUM_16
+#define PIN_NUM_RCLK_CONF GPIO_NUM_21
+#define PIN_NUM_OE_SEL GPIO_NUM_5
+#define PIN_NUM_OE_CONF GPIO_NUM_15
 
 FlipdotDisplay* dsp;
 WS2812Driver* led_drv;
@@ -62,7 +62,7 @@ void app_main() {
     printf("Driver initialized!\n");
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    dsp = new FlipdotDisplay(drv);
+    //dsp = new FlipdotDisplay(drv);
 
     printf("Display initialized!\n");
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -80,13 +80,15 @@ void app_main() {
 
     printf("Connections initialized!\n");
 
-    dsp->init_by_test();
+    //dsp->init_by_test();
 
     color_t c = {{0x05, 0x10, 0x10, 0x00}};
     led_drv->set_all_colors(c);
     led_drv->update();
 
     printf("Init done!\n");
+
+    drv->set_pixel_and_block(28 + 1, 1);
 
     /*BitArray* allOff = new BitArray(dsp->get_number_of_pixels());
     BitArray* firstOn = new BitArray(dsp->get_number_of_pixels());

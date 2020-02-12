@@ -96,6 +96,14 @@ void FlipdotDriver::reset_pixel(int x, int y) {
     flip(x, y, false);
 }
 
+void FlipdotDriver::set_pixel_and_block(int x, int y) {
+    flip_and_block(x, y, true);
+}
+
+void FlipdotDriver::reset_pixel_and_block(int x, int y) {
+    flip_and_block(x, y, false);
+}
+
 void FlipdotDriver::flip(int x, int y, bool show) {
     if (x < 0 || x >= total_width) return;
     if (y < 0 || y >= total_height) return;
@@ -144,6 +152,56 @@ void FlipdotDriver::flip(int x, int y, bool show) {
     gpio_set_level(pins.oe_sel, 0);
     ets_delay_us(show ? timing.set_usecs : timing.reset_usecs);
     gpio_set_level(pins.oe_sel, 1);
+}
+
+void FlipdotDriver::flip_and_block(int x, int y, bool show) {
+    if (x < 0 || x >= total_width) return;
+    if (y < 0 || y >= total_height) return;
+
+    int device = (x / module_width) + 1;
+    int device_x = x % module_width;
+
+    if (selected_device != device) {
+        select_device(device);
+    }
+
+    uint16_t row_mask = encode_row(y);
+    uint8_t buffer[5];
+
+    // set
+    if (show) {
+        buffer[0] = (uint8_t) (row_mask >> 8);
+        buffer[1] = (uint8_t) row_mask;
+        buffer[2] = 0x00;
+        buffer[3] = 0x00;
+        buffer[4] = encode_status(device_x, 0);
+
+        // reset
+    } else {
+        buffer[0] = 0x00;
+        buffer[1] = 0x00;
+        buffer[2] = (uint8_t) (row_mask >> 8);
+        buffer[3] = (uint8_t) row_mask;
+        buffer[4] = encode_status(device_x, 1);
+    }
+
+    spi_transaction_t tx;
+    tx.flags = 0;
+    tx.cmd = 0;
+    tx.addr = 0;
+    tx.length = 5 * 8;
+    tx.rxlength = 0;
+    tx.rx_buffer = 0;
+    tx.tx_buffer = buffer;
+
+    gpio_set_level(pins.rclk_conf, 0);
+    ESP_ERROR_CHECK(spi_device_transmit(spi, &tx));
+    gpio_set_level(pins.rclk_conf, 1);
+
+    ets_delay_us(1);
+    gpio_set_level(pins.oe_sel, 0);
+    //ets_delay_us(show ? timing.set_usecs : timing.reset_usecs);
+    //gpio_set_level(pins.oe_sel, 1);
 }
 
 void FlipdotDriver::select_device(int device) {

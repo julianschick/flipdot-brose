@@ -28,8 +28,11 @@ public:
     FlipdotDriver(int module_width_, int module_height_, int device_count_, flipdot_driver_pins_t* pins_, flipdot_driver_timing_config_t* timing_);
 
     void set_pixel(int x, int y);
+    void set_pixel_and_block(int x, int y);
     void reset_pixel(int x, int y);
+    void reset_pixel_and_block(int x, int y);
     void flip(int x, int y, bool show);
+    void flip_and_block(int x, int y, bool show);
 
     inline int get_width() { return total_width; };
     inline int get_height() { return total_height; };
