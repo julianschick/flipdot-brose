@@ -25,9 +25,9 @@ FlipdotDisplay::~FlipdotDisplay() {
 
 void FlipdotDisplay::init_by_test() {
     clear();
-    light();
+    fill();
     clear();
-    light();
+    fill();
     clear();
 }
 
@@ -36,7 +36,7 @@ void FlipdotDisplay::clear() {
     display_current_state();
 }
 
-void FlipdotDisplay::light() {
+void FlipdotDisplay::fill() {
     state->set();
     display_current_state();
 }
@@ -88,6 +88,24 @@ void FlipdotDisplay::display_string(std::string s, PixelString::TextAlignment al
     display(new_state, display_mode);
 }
 
+void FlipdotDisplay::flip_single_pixel(int x, int y, bool show, DisplayMode display_mode) {
+    if (!state_unknown && display_mode == INCREMENTAL && state->get(cmap->index(x, y)) == show) {
+        return;
+    }
+
+    // x and y bounds are checked in driver
+    drv->flip(x, y, show);
+    state->set(cmap->index(x, y), show);
+}
+
+size_t FlipdotDisplay::copy_state(uint8_t* buffer, size_t len) {
+    return state->copy_to(buffer, len);
+}
+
+bool FlipdotDisplay::get_pixel(int x, int y) {
+    return state->get(cmap->index(x, y));
+}
+
 void FlipdotDisplay::display_current_state() {
     for (int x = 0; x < drv->get_width(); x++) {
         for (int y = 0; y < drv->get_height(); y++) {
@@ -98,3 +116,7 @@ void FlipdotDisplay::display_current_state() {
     state_unknown = false;
 }
 
+bool FlipdotDisplay::is_valid_index(int x, int y) {
+    return 0 <= x && x < drv->get_width() &&
+           0 <= y && y < drv->get_height();
+}

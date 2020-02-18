@@ -8,16 +8,16 @@
 #include "libs/mdns.h"
 #include "libs/wifi.h"
 #include "libs/http_server.h"
-#include "libs/udp_server.h"
+#include "libs/tcp_server.h"
 
 #define PIN_NUM_MOSI GPIO_NUM_13
 #define PIN_NUM_CLK  GPIO_NUM_14
 
 #define PIN_NUM_CLR GPIO_NUM_19
 #define PIN_NUM_RCLK_SEL GPIO_NUM_18
-#define PIN_NUM_RCLK_CONF GPIO_NUM_5
-#define PIN_NUM_OE_SEL GPIO_NUM_17
-#define PIN_NUM_OE_CONF GPIO_NUM_16
+#define PIN_NUM_RCLK_CONF GPIO_NUM_21
+#define PIN_NUM_OE_SEL GPIO_NUM_5
+#define PIN_NUM_OE_CONF GPIO_NUM_15
 
 FlipdotDisplay* dsp;
 WS2812Driver* led_drv;
@@ -76,7 +76,7 @@ void app_main() {
     HttpServer::set_led_driver(led_drv);
     HttpServer::start();
 
-    xTaskCreate(udp_server_task, "udp_server", 4096, NULL, 5, NULL);
+    xTaskCreate(tcp_server_task, "tcp-server-task", 8500, NULL, 5, NULL);
 
     printf("Connections initialized!\n");
 

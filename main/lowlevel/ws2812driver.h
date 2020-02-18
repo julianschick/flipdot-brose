@@ -33,8 +33,10 @@ public:
 
     void set_color(size_t led, color_t& color);
     void set_all_colors(color_t& color);
-    color_t get_color(size_t led);
     void clear();
+
+    color_t get_color(size_t led);
+    inline size_t get_led_count() { return led_count; };
 
     void update();
 

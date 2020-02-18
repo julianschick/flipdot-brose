@@ -168,10 +168,16 @@ void BitArray::copy_from(const BitArray& other) {
     }
 }
 
-void BitArray::copy_from(uint8_t* buffer, size_t bytes) {
+size_t BitArray::copy_from(uint8_t* buffer, size_t bytes) {
     size_t copy_len = std::min(bytes, data_size_8);
-
     xthal_memcpy(data_ptr_8, buffer, copy_len);
+    return copy_len;
+}
+
+size_t BitArray::copy_to(uint8_t* buffer, size_t len) {
+    size_t copy_len = std::min(len, data_size_8);
+    xthal_memcpy(buffer, data_ptr_8, copy_len);
+    return copy_len;
 }
 
 bool BitArray::transition_vector_to(const class BitArray& other, BitArray& set_vector, BitArray& reset_vector) {

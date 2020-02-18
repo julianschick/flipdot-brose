@@ -30,8 +30,9 @@ public:
     void set8(size_t index, uint8_t value);
 
     void copy_from(const BitArray& other);
-    void copy_from(uint8_t* buffer, size_t bytes);
+    size_t copy_from(uint8_t* buffer, size_t bytes);
 
+    size_t copy_to(uint8_t* buffer, size_t len);
     bool transition_vector_to(const class BitArray& other, BitArray& set_vector, BitArray& reset_vector);
 
     std::string to_string() const;
