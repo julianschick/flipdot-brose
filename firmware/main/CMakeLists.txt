@@ -1,7 +1,6 @@
 set(
     COMPONENT_SRCS
         "main.cpp"
-        "util/bitarray.cpp"
         "flipdotdisplay.cpp"
         "lowlevel/flipdotdriver.cpp"
         "lowlevel/ws2812driver.cpp"
@@ -11,6 +10,7 @@ set(
         "libs/tcp_server.cpp"
         "libs/comx.cpp"
         "libs/blue.cpp"
+        "util/bitarray.cpp"
         "util/pixelmap.cpp"
         "util/pixelstring.cpp"
 )
