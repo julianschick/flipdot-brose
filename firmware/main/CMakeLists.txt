@@ -2,6 +2,7 @@ set(
     COMPONENT_SRCS
         "main.cpp"
         "flipdotdisplay.cpp"
+        "commandinterpreter.cpp"
         "lowlevel/flipdotdriver.cpp"
         "lowlevel/ws2812driver.cpp"
         "libs/wifi.cpp"
@@ -13,6 +14,7 @@ set(
         "util/bitarray.cpp"
         "util/pixelmap.cpp"
         "util/pixelstring.cpp"
+        "util/ringbuffer.cpp"
 )
 set(COMPONENT_ADD_INCLUDEDIRS "")
 
