@@ -1,0 +1,3 @@
+[submodule "firmware/components/ringbuffer"]
+	path = firmware/components/ringbuffer
+	url = git@github.com:julianschick/ringbuffer.git
