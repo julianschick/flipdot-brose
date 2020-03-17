@@ -96,7 +96,7 @@ void Blue::callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
             ESP_LOGI(TAG_BT, "ESP_SPP_INIT_EVT");
 
             esp_bt_dev_set_device_name(BT_DEVICE_NAME);
-            esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
+            esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 
             ret = esp_spp_start_srv(ESP_SPP_SEC_AUTHENTICATE, ESP_SPP_ROLE_SLAVE, 0, SPP_SERVER_NAME);
             if (ret != ESP_OK) {

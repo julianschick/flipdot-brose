@@ -5,6 +5,7 @@
 #include <lwip/sockets.h>
 
 #define TAG "tcp-server"
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include <esp_log.h>
 
 #include "../commandinterpreter.h"
@@ -75,6 +76,10 @@ void tcp_server_task(void *pvParameters) {
             ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
             break;
         }
+
+        int flag = 1;
+        setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+
 
 #ifdef TCP_IPV4
         ESP_LOGI(TAG, "Socket created in IPv4 mode");

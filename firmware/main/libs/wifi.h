@@ -41,8 +41,8 @@ private:
 	static int number_of_retries;
 	//
 	static SemaphoreHandle_t ip_semaphore;
-	static ip4_addr_t wifi_client_ip;
-	static ip4_addr_t zero_ip;
+	static esp_ip4_addr_t wifi_client_ip;
+	static esp_ip4_addr_t zero_ip;
 	//
 	static wifi_config_t config;
 	static esp_timer_handle_t reconnect_timer;

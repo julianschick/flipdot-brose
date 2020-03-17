@@ -1,6 +1,7 @@
 #ifndef FLIPDOTDRIVER_H
 #define FLIPDOTDRIVER_H
 
+#include "driver/gpio.h"
 #include "driver/spi_master.h"
 
 typedef struct {

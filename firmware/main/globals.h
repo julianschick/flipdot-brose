@@ -21,7 +21,9 @@
 #define TAG_NVS "nvs"
 
 #define MDNS_HOSTNAME "flipdot"
-#define MDNS_SERVICE_NAME "flipdot/REST"
+#define MDNS_INSTANCE_NAME "Flipdot Controller"
+#define MDNS_SERVICE_TYPE "_flipdot-tcp"
+#define MDNS_SERVICE_NAME "Flipdot Controller TCP Interface"
 
 #define SPP_SERVER_NAME "Flipdot/Serial"
 #define BT_DEVICE_NAME "Flipdot"

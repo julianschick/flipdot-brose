@@ -156,7 +156,7 @@ bool CommandInterpreter::process() {
             break;
 
         case CLEAR_DISPLAY_INC:
-            displayMode = toDisplayMode(buf[1]);
+            displayMode = toDisplayMode(buf[0]);
 
             if (displayMode == FlipdotDisplay::OVERRIDE) {
                 dsp->clear();
@@ -165,7 +165,6 @@ bool CommandInterpreter::process() {
                 blank.reset();
                 dsp->display(blank, displayMode);
             }
-            dsp->clear();
 
             buf.removeLeading(1);
             state = NEUTRAL;
@@ -173,16 +172,15 @@ bool CommandInterpreter::process() {
             break;
 
         case FILL_DISPLAY_INC:
-            displayMode = toDisplayMode(buf[1]);
+            displayMode = toDisplayMode(buf[0]);
 
             if (displayMode == FlipdotDisplay::OVERRIDE) {
-                dsp->clear();
+                dsp->fill();
             } else {
                 BitArray filled (dsp->get_number_of_pixels());
                 filled.set();
                 dsp->display(filled, displayMode);
             }
-            dsp->clear();
 
             buf.removeLeading(1);
             state = NEUTRAL;
@@ -240,6 +238,7 @@ bool CommandInterpreter::process() {
             uint8_t y = buf[2];
 
             ESP_LOGI(TAG, "(%d, %d) = %d", x, y, show);
+            dsp->flip_single_pixel(x, y, show, displayMode);
 
             revertCursor(ACK);
             state = SET_PIXEL_NEXT;

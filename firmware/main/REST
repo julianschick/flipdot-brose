@@ -1,8 +1,0 @@
-
-/whoareyou GET
-X /bitset GET
-/bitset POST
-/bitset PUT
-X /led GET
-/led POST
-/reboot GET

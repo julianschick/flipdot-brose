@@ -2,7 +2,7 @@
 #define COMMANDINTERPRETER_H
 
 #include "classes.h"
-#include "util/ringbuffer.h"
+#include "ringbuffer.h"
 
 #define NEXT_STATE(a, b) case a: state = b; cursor++; break;
 

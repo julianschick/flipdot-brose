@@ -1,7 +1,7 @@
 #include "wifi.h"
 
 #include <string.h>
-#include <esp_event_loop.h>
+#include <esp_event.h>
 #include <esp_log.h>
 #include <mdns.h>
 #include "nvs.h"
@@ -12,8 +12,8 @@ const int Wifi::max_retries;
 int Wifi::number_of_retries = 0;
 EventGroupHandle_t Wifi::wifi_status_bits;
 SemaphoreHandle_t Wifi::ip_semaphore;
-ip4_addr_t Wifi::wifi_client_ip;
-ip4_addr_t Wifi::zero_ip;
+esp_ip4_addr_t Wifi::wifi_client_ip;
+esp_ip4_addr_t Wifi::zero_ip;
 wifi_config_t Wifi::config;
 esp_timer_handle_t Wifi::reconnect_timer;
 

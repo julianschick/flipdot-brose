@@ -33,11 +33,8 @@ inline void safety_init() {
     gpio_set_level(PIN_NUM_OE_CONF, 1);
 }
 
-extern "C" {
-    void app_main(void);
-}
+extern "C" void app_main() {
 
-void app_main() {
     gpio_set_level(PIN_NUM_OE_CONF, 1);
     safety_init();
 
@@ -68,6 +65,8 @@ void app_main() {
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
     Nvs::setup();
+    //ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default()); // needed for mdns
     start_mdns_service();
     Wifi::setup();
     Blue::setup();
@@ -87,78 +86,4 @@ void app_main() {
     led_drv->update();
 
     printf("Init done!\n");
-
-    /*BitArray* allOff = new BitArray(dsp->get_number_of_pixels());
-    BitArray* firstOn = new BitArray(dsp->get_number_of_pixels());
-    BitArray* secondOn = new BitArray(dsp->get_number_of_pixels());
-    BitArray* thirdOn = new BitArray(dsp->get_number_of_pixels());
-    BitArray* fourthOn = new BitArray(dsp->get_number_of_pixels());
-    BitArray* allOn = new BitArray(dsp->get_number_of_pixels());
-    allOn->setAll(true);
-
-    for (int i = 0; i < 16*28; i++) {
-        firstOn->set(i, true);
-    }
-    for (int i = 16*28; i < 2*16*28; i++) {
-        secondOn->set(i, true);
-    }
-    for (int i = 2*16*28; i < 3*16*28; i++) {
-        thirdOn->set(i, true);
-    }
-    for (int i = 3*16*28; i < 4*16*28; i++) {
-        fourthOn->set(i, true);
-    }
-
-    while (true) {
-        dsp->display_overriding(*allOn);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        dsp->display_incrementally(*allOff);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        dsp->display_incrementally(*firstOn);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        dsp->display_incrementally(*secondOn);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        dsp->display_incrementally(*thirdOn);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        dsp->display_incrementally(*fourthOn);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-
-        dsp->display_string("Hallo Welt");
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-        dsp->display_string("Ratzupaltuff!");
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-        dsp->display_string("Wolkenthermik");
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-    }*/
-
-    /*ws2812_control_init();
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-    struct led_state new_state;
-    for (int i = 0; i < NUM_LEDS; i++) {
-        new_state.leds[i] = 0x202020;
-    }
-    ws2812_write_leds(new_state);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    ws2812_write_leds(new_state);
-
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-    int counter = 0;
-    while (true) {
-
-        for (int x = 0; x < 28 * 4; x++) {
-            for (int y = 0; y < 16; y++) {
-                drv->flip(x, y, counter % 2);
-            }
-        }
-
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        counter++;
-        ws2812_write_leds(new_state);
-    }*/
-
 }

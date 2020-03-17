@@ -1,5 +1,5 @@
-set(
-    COMPONENT_SRCS
+idf_component_register(
+    SRCS
         "main.cpp"
         "flipdotdisplay.cpp"
         "commandinterpreter.cpp"
@@ -14,8 +14,6 @@ set(
         "util/bitarray.cpp"
         "util/pixelmap.cpp"
         "util/pixelstring.cpp"
-        "util/ringbuffer.cpp"
+    INCLUDE_DIRS
+        ""
 )
-set(COMPONENT_ADD_INCLUDEDIRS "")
-
-register_component()

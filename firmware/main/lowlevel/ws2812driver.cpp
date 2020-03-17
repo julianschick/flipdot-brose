@@ -21,15 +21,8 @@ WS2812Driver::WS2812Driver(gpio_num_t pin, rmt_channel_t rmt_channel, ws2812_tim
 }
 
 void WS2812Driver::init_rmt() {
-    rmt_config_t config;
-    config.rmt_mode = RMT_MODE_TX;
-    config.channel = rmt_channel;
-    config.gpio_num = pin;
-    config.mem_block_num = 3;
-    config.tx_config.loop_en = false;
-    config.tx_config.carrier_en = false;
-    config.tx_config.idle_output_en = true;
-    config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
+    rmt_config_t config = RMT_DEFAULT_CONFIG_TX(pin, rmt_channel);
+    //config.mem_block_num = 3;
     config.clk_div = 1;
 
     float freq = 80 / config.clk_div;
