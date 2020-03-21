@@ -204,10 +204,11 @@ bool CommandInterpreter::process() {
                     receivedBytes[i] = buf[i + 3];
                 }
 
-                std::string str = std::string(receivedBytes[0], len);
-                dsp->display_string(str, alignment, displayMode);
-
                 revertCursor(ACK);
+
+                std::string str = std::string((char*)&receivedBytes[0], len);
+                ESP_LOGI(TAG, "string  of len %d received = %s", len, str.c_str());
+                dsp->display_string(str, alignment, displayMode);
             }
             break;
 

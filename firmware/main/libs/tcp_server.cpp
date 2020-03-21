@@ -45,8 +45,6 @@ void response_handler(const uint8_t* data, size_t len) {
 
 void tcp_server_task(void *pvParameters) {
     char rx_buffer[2048];
-    char tx_buffer[2048];
-    size_t tx_len;
     int addr_family;
     int ip_protocol;
 
