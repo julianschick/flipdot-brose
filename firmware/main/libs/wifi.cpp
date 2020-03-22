@@ -12,8 +12,8 @@ const int Wifi::max_retries;
 int Wifi::number_of_retries = 0;
 EventGroupHandle_t Wifi::wifi_status_bits;
 SemaphoreHandle_t Wifi::ip_semaphore;
-esp_ip4_addr_t Wifi::wifi_client_ip;
-esp_ip4_addr_t Wifi::zero_ip;
+ip4_addr_t Wifi::wifi_client_ip;
+ip4_addr_t Wifi::zero_ip;
 wifi_config_t Wifi::config;
 esp_timer_handle_t Wifi::reconnect_timer;
 

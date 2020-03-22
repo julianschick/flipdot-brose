@@ -53,7 +53,9 @@ extern "C" void app_main() {
 
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
 
-    ws2812_timing_config_t timing_config = {28, 72, 72, 28};
+    uint32_t short_period = 28; //28
+    uint32_t long_period = 72; //72
+    ws2812_timing_config_t timing_config = {short_period, long_period, long_period, short_period};
     led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
 
     printf("Driver initialized!\n");
@@ -79,7 +81,7 @@ extern "C" void app_main() {
 
     printf("Connections initialized!\n");
 
-    dsp->init_by_test();
+    //dsp->init_by_test();
 
     color_t c = {{0x05, 0x10, 0x10, 0x00}};
     led_drv->set_all_colors(c);
