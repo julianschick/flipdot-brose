@@ -12,18 +12,20 @@
 
 #define TCP_IPV4
 #define TCP_PORT 3000
+#define TCP_RECV_TIMEOUT_SEC 2
 
-CommandInterpreter* cmx = new CommandInterpreter(1000, &response_handler, &close_handler);
-int readAttempts = 0;
+CommandInterpreter* cmx = new CommandInterpreter(1000, &send_response, &close_tcp_connection);
+int listen_sock = 0;
 int connection_sock = 0;
 
-void close_handler() {
+void close_tcp_connection() {
+    ESP_LOGI(TAG, "Closing connection");
     shutdown(connection_sock, 0);
     close(connection_sock);
     connection_sock = 0;
 }
 
-void response_handler(const uint8_t* data, size_t len) {
+void send_response(const uint8_t* data, size_t len) {
     if (len > 0) {
         ESP_LOGI(TAG, "Replying with %d bytes of data", len);
 
@@ -32,16 +34,15 @@ void response_handler(const uint8_t* data, size_t len) {
             int written = send(connection_sock, data + (len - to_write), to_write, 0);
             if (written < 0) {
                 ESP_LOGE(TAG, "Error occurred sending reply: errno %d", errno);
-                shutdown(connection_sock, 0);
-                close(connection_sock);
-                connection_sock = 0;
-                readAttempts = 0;
+                close_tcp_connection();
                 return;
             }
             to_write -= written;
         }
     }
 }
+
+
 
 void tcp_server_task(void *pvParameters) {
     char rx_buffer[2048];
@@ -65,19 +66,19 @@ void tcp_server_task(void *pvParameters) {
         destAddr.sin6_port = htons(3000);
         addr_family = AF_INET6;
         ip_protocol = IPPROTO_IPV6;
-        inet6_ntoa_r(destAddr.sin6_addr, addr_str, sizeof(addr_str) - 1);
 #endif
 
-        int listen_sock = socket(addr_family, SOCK_STREAM, ip_protocol);
+        listen_sock = socket(addr_family, SOCK_STREAM, ip_protocol);
 
         if (listen_sock < 0) {
             ESP_LOGE(TAG, "Unable to create socket: errno %d", errno);
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
             break;
         }
 
+        // Make it possible to reuse bound address immediately
         int flag = 1;
         setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
-
 
 #ifdef TCP_IPV4
         ESP_LOGI(TAG, "Socket created in IPv4 mode");
@@ -95,7 +96,8 @@ void tcp_server_task(void *pvParameters) {
         if (err != 0) {
             ESP_LOGE(TAG, "Error occurred trying to listen: errno %d", errno);
             close(listen_sock);
-            return;
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
+            break;
         }
 
         while (1) {
@@ -104,12 +106,17 @@ void tcp_server_task(void *pvParameters) {
             socklen_t addr_len = sizeof(source_addr);
 
             if (connection_sock == 0) {
+                ESP_LOGI(TAG, "Waiting for incoming connection...");
                 connection_sock = accept(listen_sock, (struct sockaddr *) &source_addr, &addr_len);
                 if (connection_sock < 0) {
                     ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
+                    connection_sock = 0;
                     continue;
+                } else {
+                    // Set recv timeout
+                    timeval tv = {.tv_sec = TCP_RECV_TIMEOUT_SEC, .tv_usec = 0};
+                    setsockopt(connection_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
                 }
-                ESP_LOGI(TAG, "Waiting for incoming connection...");
             } else {
                 ESP_LOGI(TAG, "Waiting for more data...");
             }
@@ -118,35 +125,32 @@ void tcp_server_task(void *pvParameters) {
 
             // Error occured during receiving
             if (len < 0) {
-                ESP_LOGE(TAG, "Data reception failed: errno %d", errno);
-                break;
-            }
+                if (errno == EAGAIN) {
+                    ESP_LOGE(TAG, "Data reception timeout");
+                } else {
+                    ESP_LOGE(TAG, "Data reception failed: errno %d", errno);
+                }
+
+                close_tcp_connection();
+                continue;
 
             // Data received
-            else {
+            } else if (len > 0) {
                 ESP_LOGI(TAG, "%d bytes of data received", len);
 
-                if (len > 0) {
-                    readAttempts = 0;
-                    cmx->queue((uint8_t*)rx_buffer, len);
-                    while(cmx->process()) { }
-                } else {
-                    readAttempts++;
-                    if (readAttempts > 1000) {
-                        shutdown(connection_sock, 0);
-                        close(connection_sock);
-                        connection_sock = 0;
-                        readAttempts = 0;
-                    }
-                }
+                cmx->queue((uint8_t*)rx_buffer, len);
+                while(cmx->process()) { }
+                // while processing, close_tcp_connection can be called, as it is the close handler
+
+            // Connection has been shut down by peer
+            } else {
+                ESP_LOGI(TAG, "Connection has been closed by peer");
+                close_tcp_connection();
             }
         }
 
         if (connection_sock > 0) {
-            shutdown(connection_sock, 0);
-            close(connection_sock);
-            connection_sock = 0;
-            readAttempts = 0;
+            close_tcp_connection();
         }
 
         ESP_LOGE(TAG, "Shutting down socket and restarting...");

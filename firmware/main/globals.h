@@ -15,18 +15,18 @@
 #include "freertos/semphr.h"
 
 // Log Tags
-#define TAG_WIFI "wlan"
 #define TAG_BT "bluetooth"
 #define TAG_HTTP "http"
 #define TAG_NVS "nvs"
 
-#define MDNS_HOSTNAME "flipdot"
+#define MDNS_HOSTNAME "flipdot1"
 #define MDNS_INSTANCE_NAME "Flipdot Controller"
 #define MDNS_SERVICE_TYPE "_flipdot-tcp"
 #define MDNS_SERVICE_NAME "Flipdot Controller TCP Interface"
 
 #define SPP_SERVER_NAME "Flipdot/Serial"
-#define BT_DEVICE_NAME "Flipdot"
+#define BT_DEVICE_NAME "Flipdot1"
+#define DHCP_HOSTNAME "flipdot1"
 
 // Syntactic Sugar
 #define PRIVATE_SYMBOLS namespace {

@@ -33,6 +33,33 @@ inline void safety_init() {
     gpio_set_level(PIN_NUM_OE_CONF, 1);
 }
 
+void led_task(void *pvParameters) {
+
+    color_t c = {{0x00, 0x00, 0x00, 0x00}};
+
+    uint32_t counter = 0;
+
+    while(1) {
+        uint8_t phase = (counter / 256) % 6;
+
+        switch (phase) {
+            case 0: c.brg.green = c.brg.green < 255 ? c.brg.green + 1 : 255; break;
+            case 1: c.brg.red = c.brg.red > 0 ? c.brg.red - 1 : 0; break;
+            case 2: c.brg.blue = c.brg.blue < 255 ? c.brg.blue + 1 : 255; break;
+            case 3: c.brg.green = c.brg.green > 0 ? c.brg.green - 1 : 0; break;
+            case 4: c.brg.red = c.brg.red < 255 ? c.brg.red + 1 : 255; break;
+            case 5: c.brg.blue = c.brg.blue > 0 ? c.brg.blue - 1 : 0; break;
+        }
+
+        led_drv->set_all_colors(c);
+        led_drv->update();
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+        counter++;
+    }
+
+
+}
+
 extern "C" void app_main() {
 
     gpio_set_level(PIN_NUM_OE_CONF, 1);
@@ -53,8 +80,8 @@ extern "C" void app_main() {
 
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
 
-    uint32_t short_period = 28; //28
-    uint32_t long_period = 72; //72
+    uint32_t short_period = 28;
+    uint32_t long_period = 72;
     ws2812_timing_config_t timing_config = {short_period, long_period, long_period, short_period};
     led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
 
@@ -77,7 +104,9 @@ extern "C" void app_main() {
     HttpServer::set_led_driver(led_drv);
     HttpServer::start();
 
-    xTaskCreate(tcp_server_task, "tcp-server-task", 8500, NULL, 5, NULL);
+    xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 8500, NULL, 5, NULL, 0);
+    //xTaskCreatePinnedToCore(led_task, "led-task", 1000, NULL, 4, NULL, 1);
+
 
     printf("Connections initialized!\n");
 
