@@ -29,7 +29,8 @@ void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular
         int line_char_count = 0;
         bool whitespace = false;
 
-        PixelFont* tmp = active_font;
+        PixelFont* rst_active_font = active_font;
+        PixelFont* active_font_before = active_font;
 
         for (int i = 0; i < s.size(); i++) {
             char c = s[i];
@@ -37,12 +38,15 @@ void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular
             if (c == 0x20) {
                 whitespace = true;
             } else if (c == 0x11) {
+                active_font_before = active_font;
                 active_font = &regular_font;
             } else if (c == 0x12) {
+                active_font_before = active_font;
                 active_font = &bold_font;
             } else if (active_font->has_char(c)) {
                 int char_width = active_font->get_width(c);
-                int space = (x_cursor == 0 ? 0 : 1) + (whitespace ? 2 : 0);
+                int undercut = x_cursor == 0 ? 0 : PixelFont::get_undercut(*active_font_before, s[i-1], *active_font, c);
+                int space = (x_cursor == 0 ? 0 : (1 - undercut)) + (whitespace ? 2 : 0);
                 whitespace = false;
 
                 if (x_cursor + space + char_width > pixelmap.get_width()) {
@@ -60,7 +64,8 @@ void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular
             }
         }
 
-        active_font = tmp;
+        active_font = rst_active_font;
+        active_font_before = rst_active_font;
         switch (text_alignment) {
             case LEFT: coords.x = 0; break;
             case CENTERED: coords.x = ((pixelmap.get_width() - line_width) / 2) - 1; break;
@@ -76,12 +81,14 @@ void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular
             if (c == 0x20) {
                 coords.x += 2;
             } else if (c == 0x11) {
+                active_font_before = active_font;
                 active_font = &regular_font;
             } else if (c == 0x12) {
-                ESP_LOGI("display", "boldify");
+                active_font_before = active_font;
                 active_font = &bold_font;
             } else if (active_font->has_char(c)) {
-                coords.x += coords.x != 0;
+                int undercut = coords.x == 0 ? 0 : PixelFont::get_undercut(*active_font_before, s[i-1], *active_font, c);
+                coords.x += (coords.x != 0) - undercut;
 
                 for (size_t j = 0; j < active_font->get_width(c); j++) {
                     target.set8(pixelmap.index(coords), active_font->get_octet(c, j));
