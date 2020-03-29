@@ -106,16 +106,21 @@ bool CommandInterpreter::process() {
             } else if (b == 0xC0) {
                 buf.removeLeading(1);
 
-                uint8_t replyData[led_drv->get_led_count() * 3];
+                color_t *data = led_ctrl->getAll();
+                uint8_t replyData[led_ctrl->getLedCount() * 3];
 
-                for (size_t i = 0; i < led_drv->get_led_count(); i++) {
-                    color_t color = led_drv->get_color(i);
-                    replyData[i*3 + 0] = color.brg.red;
-                    replyData[i*3 + 1] = color.brg.green;
-                    replyData[i*3 + 2] = color.brg.blue;
+                for (size_t i = 0; i < led_ctrl->getLedCount(); i++) {
+                    replyData[i * 3 + 0] = data[i].brg.red;
+                    replyData[i * 3 + 1] = data[i].brg.green;
+                    replyData[i * 3 + 2] = data[i].brg.blue;
                 }
 
                 respond(&replyData[0], sizeof(replyData));
+
+            // set led transition mode
+            } else if (b == 0xD2) {
+                buf.removeLeading(1);
+                state = SET_LED_TRX_MODE;
 
             // close connection
             } else if (b == 0xD0) {
@@ -255,13 +260,12 @@ bool CommandInterpreter::process() {
                      (uint8_t) buf[2],
                      (uint8_t) buf[0],
                      (uint8_t) buf[1],
-                     0x00
+                     0xFF
                  }};
 
-                led_drv->set_all_colors(c);
-                led_drv->update();
+                bool success = led_ctrl->setAllLedsToSameColor(c);
 
-                revertCursor(ACK);
+                revertCursor(success ? ACK : BUFFER_OVERFLOW);
                 state = SET_ALL_LEDS_NEXT;
             }
             break;
@@ -279,9 +283,39 @@ bool CommandInterpreter::process() {
             break;
 
         case SET_LED_NEXT:
-            if (buf[0] == STOP) {
-                state = NEUTRAL;
-                buf.removeLeading(1);
+            ESP_LOGV(TAG, "set_led_next, current = %d, cursor = %d", b, cursor);
+
+            if (b == STOP) {
+                ESP_LOGV(TAG, "stopped, cursor = %d", cursor);
+
+                if (cursor > 0) {
+                    std::vector<WS2812Controller::LedChangeCommand>* cmds =
+                            new std::vector<WS2812Controller::LedChangeCommand>(cursor / 4);
+
+                    for (size_t i = 0; i < cursor / 4; i++) {
+                        uint8_t addr = 0x7F & buf[i*4 + 0];
+
+                        if (addr < led_ctrl->getLedCount()) {
+                            color_t c = {{
+                                 (uint8_t) buf[i*4 + 3],
+                                 (uint8_t) buf[i*4 + 1],
+                                 (uint8_t) buf[i*4 + 2],
+                                 0x00
+                             }};
+
+                            WS2812Controller::LedChangeCommand cmd = {addr, c};
+                            cmds->push_back(cmd);
+                        }
+                    }
+
+                    bool success = led_ctrl->setLeds(cmds);
+                    revertCursor(success ? ACK : BUFFER_OVERFLOW);
+                } else {
+                    state = NEUTRAL;
+                    buf.removeLeading(1);
+                    respond(ACK);
+                }
+
             } else if ((buf[0] & 0x80) != 0) {
                 state = NEUTRAL;
                 buf.removeLeading(1);
@@ -293,29 +327,10 @@ bool CommandInterpreter::process() {
             break;
 
         case SET_LED_RGB:
-            if (cursor < 3) {
-                cursor++;
-            } else {
-
-                uint8_t addr = 0x7F & buf[0];
-
-                if (addr < led_drv->get_led_count()) {
-                    color_t c = {{
-                         (uint8_t) buf[3],
-                         (uint8_t) buf[1],
-                         (uint8_t) buf[2],
-                         0x00
-                    }};
-
-                    led_drv->set_color(addr, c);
-                    led_drv->update();
-
-                    revertCursor(ACK);
-                } else {
-                    revertCursor(ADDR_INVALID);
-                }
-
-
+            cursor++;
+            ESP_LOGV(TAG, "cursor now %d", cursor);
+            if (cursor % 4 == 0) {
+                ESP_LOGV(TAG, "state led next");
                 state = SET_LED_NEXT;
             }
             break;
@@ -334,7 +349,7 @@ bool CommandInterpreter::process() {
 
         NEXT_STATE(GET_PIXEL_X, GET_PIXEL_Y)
 
-        case GET_PIXEL_Y:
+        case GET_PIXEL_Y: {
 
             uint8_t x = buf[0];
             uint8_t y = buf[1];
@@ -351,7 +366,21 @@ bool CommandInterpreter::process() {
             respond(&replyData, 1);
             revertCursor(0x00);
             state = GET_PIXEL_NEXT;
+        }   break;
 
+        case SET_LED_TRX_MODE:
+
+            if (buf[0] > WS2812Controller::TransitionMode::SLIDE_QUICK ||
+                buf[0] < WS2812Controller::TransitionMode::IMMEDIATE) {
+                respond(ADDR_INVALID);
+            } else {
+                bool success = led_ctrl->setTransitionMode((WS2812Controller::TransitionMode) buf[0]);
+                respond(success ? &ACK : &BUFFER_OVERFLOW, 1);
+            }
+
+            buf.removeLeading(1);
+            state = NEUTRAL;
+            break;
     }
 
     return true;

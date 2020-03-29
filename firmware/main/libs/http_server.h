@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "../flipdotdisplay.h"
-#include "../lowlevel/ws2812driver.h"
+#include "../drivers/ws2812driver.h"
 
 namespace HttpServer {
 

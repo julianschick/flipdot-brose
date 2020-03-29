@@ -39,6 +39,7 @@ public:
     inline size_t get_led_count() { return led_count; };
 
     void update();
+    color_t* get_state() { return state; }
 
 private:
     gpio_num_t pin;

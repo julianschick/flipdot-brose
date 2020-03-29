@@ -6,7 +6,7 @@
 #include "util/bitarray.h"
 #include "util/pixelmap.h"
 #include "util/pixelstring.h"
-#include "lowlevel/flipdotdriver.h"
+#include "drivers/flipdotdriver.h"
 
 class FlipdotDisplay {
 
@@ -18,8 +18,6 @@ public:
 public:
     FlipdotDisplay(FlipdotDriver* drv_);
     ~FlipdotDisplay();
-
-    void init_by_test();
 
     void clear();
     void fill();

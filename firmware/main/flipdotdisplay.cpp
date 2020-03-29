@@ -1,11 +1,13 @@
 #include "flipdotdisplay.h"
 
 #include <vector>
-#include <esp_log.h>
-
 #include "font/octafont-regular.h"
 #include "font/octafont-bold.h"
-#include "util/util.h"
+
+#define TAG "flip-controller"
+#define LOG_LOCAL_LEVEL ESP_LOG_ERROR
+//#define ASCII_PIXELS
+#include <esp_log.h>
 
 FlipdotDisplay::FlipdotDisplay(FlipdotDriver *drv_) {
     drv = drv_;
@@ -21,14 +23,6 @@ FlipdotDisplay::~FlipdotDisplay() {
     delete state;
     delete transition_set;
     delete transition_reset;
-}
-
-void FlipdotDisplay::init_by_test() {
-    clear();
-    fill();
-    clear();
-    fill();
-    clear();
 }
 
 void FlipdotDisplay::clear() {
@@ -62,6 +56,7 @@ void FlipdotDisplay::display(const BitArray &new_state, DisplayMode mode) {
         }
     }
 
+#ifdef ASCII_PIXELS
     PixelMap pixmap (drv->get_width(), drv->get_height(), true);
     for (size_t y = 0; y < drv->get_height(); y++) {
         string s = "";
@@ -70,8 +65,7 @@ void FlipdotDisplay::display(const BitArray &new_state, DisplayMode mode) {
         }
         printf("|%s|\n", s.c_str());
     }
-
-    printf("display done\n");
+#endif
 
 }
 

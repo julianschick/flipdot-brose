@@ -48,15 +48,6 @@ void Wifi::setup() {
 	timer_conf.arg = NULL;
 	esp_timer_create(&timer_conf, &reconnect_timer);
 
-	//vTaskDelay(200 / portTICK_PERIOD_MS);
-    tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA ,"flipdot_abc");
-
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    const char* hostname;
-    tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &hostname);
-    ESP_LOGW("HOSTNAME", "%s", hostname);
-
-
     if (active) {
     	enable();
     }

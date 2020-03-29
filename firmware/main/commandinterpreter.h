@@ -29,8 +29,9 @@ private:
         SET_ALL_LEDS, SET_ALL_LEDS_NEXT,
         SET_LED_NEXT, SET_LED_RGB,
 
-        GET_PIXEL_NEXT, GET_PIXEL_X, GET_PIXEL_Y
+        GET_PIXEL_NEXT, GET_PIXEL_X, GET_PIXEL_Y,
 
+        SET_LED_TRX_MODE
     };
 
     RingBuffer& buf;
@@ -47,6 +48,7 @@ private:
     const uint8_t CONTINUE = 0x84;
     const uint8_t  STATE_UNKNOWN = 0x85;
     const uint8_t  ADDR_INVALID = 0x86;
+    const uint8_t BUFFER_OVERFLOW = 0x87;
 
     // conversions
     inline FlipdotDisplay::DisplayMode toDisplayMode(uint8_t byte) {
@@ -76,6 +78,7 @@ private:
     void revertCursor(uint8_t response);
 
     void respond(const uint8_t* data, size_t len);
+    inline void respond(const uint8_t response) { respond(&response, 1); };
     void ack();
     void invalidCommand();
 

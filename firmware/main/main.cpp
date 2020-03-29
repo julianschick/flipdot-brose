@@ -1,7 +1,8 @@
 #include "globals.h"
 
-#include "lowlevel/flipdotdriver.h"
-#include "lowlevel/ws2812driver.h"
+#include "drivers/flipdotdriver.h"
+#include "drivers/ws2812driver.h"
+#include "controllers/ws2812controller.h"
 
 #include "libs/nvs.h"
 #include "libs/blue.h"
@@ -21,6 +22,7 @@
 
 FlipdotDisplay* dsp;
 WS2812Driver* led_drv;
+WS2812Controller* led_ctrl;
 
 inline void safety_init() {
     gpio_config_t io_conf;
@@ -35,7 +37,7 @@ inline void safety_init() {
 
 void led_task(void *pvParameters) {
 
-    color_t c = {{0x00, 0x00, 0x00, 0x00}};
+    /*color_t c = {{0x00, 0x00, 0x00, 0x00}};
 
     uint32_t counter = 0;
 
@@ -55,8 +57,22 @@ void led_task(void *pvParameters) {
         led_drv->update();
         vTaskDelay(20 / portTICK_PERIOD_MS);
         counter++;
-    }
+    }*/
 
+    /*vTaskDelay(5000 / portTICK_PERIOD_MS);
+    color_t c = {{0x00, 0xFF, 0x00, 0xFF}};
+
+    led_ctrl->setTransitionMode(WS2812Controller::LINEAR_SLOW);
+    led_ctrl->setAllLedsToSameColor(c);*/
+    led_ctrl->readState();
+
+    while(1) {
+        led_ctrl->cycle();
+
+        if (!led_ctrl->isBusy()) {
+            vTaskDelay(1);
+        }
+    }
 
 }
 
@@ -75,8 +91,8 @@ extern "C" void app_main() {
     pins.oe_sel = PIN_NUM_OE_SEL;
 
     flipdot_driver_timing_config_t timing;
-    timing.set_usecs = 700;
-    timing.reset_usecs = 700;
+    timing.set_usecs = 110;     //110
+    timing.reset_usecs = 140;   //140
 
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
 
@@ -84,6 +100,8 @@ extern "C" void app_main() {
     uint32_t long_period = 72;
     ws2812_timing_config_t timing_config = {short_period, long_period, long_period, short_period};
     led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
+    led_ctrl = new WS2812Controller(led_drv);
+    led_drv->clear();
 
     printf("Driver initialized!\n");
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -105,16 +123,16 @@ extern "C" void app_main() {
     HttpServer::start();
 
     xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 8500, NULL, 5, NULL, 0);
-    //xTaskCreatePinnedToCore(led_task, "led-task", 1000, NULL, 4, NULL, 1);
+    xTaskCreatePinnedToCore(led_task, "led-task", 5000, NULL, 4, NULL, 1);
 
 
     printf("Connections initialized!\n");
 
     //dsp->init_by_test();
 
-    color_t c = {{0x05, 0x10, 0x10, 0x00}};
-    led_drv->set_all_colors(c);
-    led_drv->update();
+    //color_t c = {{0x05, 0x10, 0x10, 0x00}};
+    //led_drv->set_all_colors(c);
+    //led_drv->update();
 
-    printf("Init done!\n");
+    //printf("Init done!\n");
 }

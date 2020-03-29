@@ -27,17 +27,21 @@ void close_tcp_connection() {
 
 void send_response(const uint8_t* data, size_t len) {
     if (len > 0) {
-        ESP_LOGI(TAG, "Replying with %d bytes of data", len);
+        if (connection_sock > 0) {
+            ESP_LOGI(TAG, "Replying with %d bytes of data", len);
 
-        int to_write = len;
-        while (to_write > 0) {
-            int written = send(connection_sock, data + (len - to_write), to_write, 0);
-            if (written < 0) {
-                ESP_LOGE(TAG, "Error occurred sending reply: errno %d", errno);
-                close_tcp_connection();
-                return;
+            int to_write = len;
+            while (to_write > 0) {
+                int written = send(connection_sock, data + (len - to_write), to_write, 0);
+                if (written < 0) {
+                    ESP_LOGE(TAG, "Error occurred sending reply: errno %d", errno);
+                    close_tcp_connection();
+                    return;
+                }
+                to_write -= written;
             }
-            to_write -= written;
+        } else {
+            ESP_LOGE(TAG, "Trying to reply, but connection has already been closed");
         }
     }
 }
@@ -127,6 +131,8 @@ void tcp_server_task(void *pvParameters) {
             if (len < 0) {
                 if (errno == EAGAIN) {
                     ESP_LOGE(TAG, "Data reception timeout");
+                } else if (errno == ECONNRESET) {
+                    ESP_LOGI(TAG, "Connection has been closed by peer");
                 } else {
                     ESP_LOGE(TAG, "Data reception failed: errno %d", errno);
                 }
