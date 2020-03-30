@@ -91,8 +91,8 @@ extern "C" void app_main() {
     pins.oe_sel = PIN_NUM_OE_SEL;
 
     flipdot_driver_timing_config_t timing;
-    timing.set_usecs = 110;     //110
-    timing.reset_usecs = 140;   //140
+    timing.set_usecs = 400;     //110
+    timing.reset_usecs = 400;   //140
 
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
 

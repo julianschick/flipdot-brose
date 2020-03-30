@@ -5,21 +5,21 @@
 #include <lwip/sockets.h>
 
 #define TAG "tcp-server"
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include <esp_log.h>
 
 #include "../commandinterpreter.h"
 
 #define TCP_IPV4
 #define TCP_PORT 3000
-#define TCP_RECV_TIMEOUT_SEC 2
+#define TCP_RECV_TIMEOUT_SEC 4
 
 CommandInterpreter* cmx = new CommandInterpreter(1000, &send_response, &close_tcp_connection);
 int listen_sock = 0;
 int connection_sock = 0;
 
 void close_tcp_connection() {
-    ESP_LOGI(TAG, "Closing connection");
+    ESP_LOGD(TAG, "Closing connection");
     shutdown(connection_sock, 0);
     close(connection_sock);
     connection_sock = 0;
@@ -28,7 +28,7 @@ void close_tcp_connection() {
 void send_response(const uint8_t* data, size_t len) {
     if (len > 0) {
         if (connection_sock > 0) {
-            ESP_LOGI(TAG, "Replying with %d bytes of data", len);
+            ESP_LOGD(TAG, "Replying with %d bytes of data", len);
 
             int to_write = len;
             while (to_write > 0) {
@@ -41,7 +41,7 @@ void send_response(const uint8_t* data, size_t len) {
                 to_write -= written;
             }
         } else {
-            ESP_LOGE(TAG, "Trying to reply, but connection has already been closed");
+            ESP_LOGD(TAG, "Trying to reply, but connection has already been closed");
         }
     }
 }
@@ -110,7 +110,7 @@ void tcp_server_task(void *pvParameters) {
             socklen_t addr_len = sizeof(source_addr);
 
             if (connection_sock == 0) {
-                ESP_LOGI(TAG, "Waiting for incoming connection...");
+                ESP_LOGD(TAG, "Waiting for incoming connection...");
                 connection_sock = accept(listen_sock, (struct sockaddr *) &source_addr, &addr_len);
                 if (connection_sock < 0) {
                     ESP_LOGE(TAG, "Unable to accept connection: errno %d", errno);
@@ -122,7 +122,7 @@ void tcp_server_task(void *pvParameters) {
                     setsockopt(connection_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
                 }
             } else {
-                ESP_LOGI(TAG, "Waiting for more data...");
+                ESP_LOGD(TAG, "Waiting for more data...");
             }
 
             int len = recv(connection_sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
@@ -130,9 +130,9 @@ void tcp_server_task(void *pvParameters) {
             // Error occured during receiving
             if (len < 0) {
                 if (errno == EAGAIN) {
-                    ESP_LOGE(TAG, "Data reception timeout");
+                    ESP_LOGD(TAG, "Data reception timeout");
                 } else if (errno == ECONNRESET) {
-                    ESP_LOGI(TAG, "Connection has been closed by peer");
+                    ESP_LOGD(TAG, "Connection has been closed by peer");
                 } else {
                     ESP_LOGE(TAG, "Data reception failed: errno %d", errno);
                 }
@@ -142,7 +142,7 @@ void tcp_server_task(void *pvParameters) {
 
             // Data received
             } else if (len > 0) {
-                ESP_LOGI(TAG, "%d bytes of data received", len);
+                ESP_LOGD(TAG, "%d bytes of data received", len);
 
                 cmx->queue((uint8_t*)rx_buffer, len);
                 while(cmx->process()) { }
@@ -150,7 +150,7 @@ void tcp_server_task(void *pvParameters) {
 
             // Connection has been shut down by peer
             } else {
-                ESP_LOGI(TAG, "Connection has been closed by peer");
+                ESP_LOGD(TAG, "Connection has been closed by peer");
                 close_tcp_connection();
             }
         }
