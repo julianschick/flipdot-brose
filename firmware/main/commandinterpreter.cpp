@@ -40,7 +40,6 @@ bool CommandInterpreter::process() {
 
     uint8_t b = buf[cursor];
     size_t len = 0;
-    FlipdotDisplay::DisplayMode displayMode = FlipdotDisplay::OVERRIDE;
 
     switch (state) {
         case NEUTRAL: // cursor == 0
@@ -52,27 +51,29 @@ bool CommandInterpreter::process() {
 
             // show bitset
             } else if (b == 0x90) {
-                state = SHOW_BITSET_INC;
+                state = SHOW_BITSET_LEN;
                 cursor++;
 
             // clear display
             } else if (b == 0x91) {
-                state = CLEAR_DISPLAY_INC;
+                dsp->clear();
+                respond(ACK);
                 buf.removeLeading(1);
 
             // fill display
             } else if (b == 0x92) {
-                state = FILL_DISPLAY_INC;
+                dsp->fill();
+                respond(ACK);
                 buf.removeLeading(1);
 
             // show text message
             } else if (b == 0x93) {
-                state = SHOW_TEXT_INC;
+                state = SHOW_TEXT_LEN_ALIGN;
                 cursor++;
 
             // set pixel
             } else if (b == 0x94) {
-                state = SET_PIXEL_INC;
+                state = SET_PIXEL_NEXT;
                 buf.removeLeading(1);
 
             // set all leds
@@ -117,16 +118,25 @@ bool CommandInterpreter::process() {
 
                 respond(&replyData[0], sizeof(replyData));
 
+            // set pixel incremental mode
+            } else if (b == 0xD0) {
+                buf.removeLeading(1);
+                state = SET_INC_MODE;
+
+            // set pixel overlay mode
+            } else if (b == 0xD1) {
+                buf.removeLeading(1);
+                state = SET_OVERLAY_MODE;
+
             // set led transition mode
             } else if (b == 0xD2) {
                 buf.removeLeading(1);
                 state = SET_LED_TRX_MODE;
 
-            // close connection
-            } else if (b == 0xD0) {
-                connectionCloseHandler();
-                reset();
-                return false;
+            // set transition mode
+            } else if (b == 0xD3) {
+                buf.removeLeading(1);
+                state = SET_TRX_MODE;
 
             // invalid command
             } else {
@@ -137,90 +147,47 @@ bool CommandInterpreter::process() {
 
             break;
 
-        NEXT_STATE(SHOW_BITSET_INC, SHOW_BITSET_LEN)
         NEXT_STATE(SHOW_BITSET_LEN, SHOW_BITSET_BITS)
 
         case SHOW_BITSET_BITS:
-            len = buf[2];
+            len = buf[1];
 
-            if (cursor - 2 < len) {
+            if (cursor - 1 < len) {
                 cursor++;
             } else {
-                displayMode = toDisplayMode(buf[1]);
-
                 uint8_t receivedBytes[len];
                 for (size_t i = 0; i < len; i++) {
-                    receivedBytes[i] = buf[i+3];
+                    receivedBytes[i] = buf[i+2];
                 }
                 BitArray bitset (dsp->get_number_of_pixels());
                 bitset.copy_from(&receivedBytes[0], len);
-                dsp->display(bitset, displayMode);
+                dsp->display(bitset);
 
                 revertCursor(ACK);
             }
             break;
 
-        case CLEAR_DISPLAY_INC:
-            displayMode = toDisplayMode(buf[0]);
-
-            if (displayMode == FlipdotDisplay::OVERRIDE) {
-                dsp->clear();
-            } else {
-                BitArray blank (dsp->get_number_of_pixels());
-                blank.reset();
-                dsp->display(blank, displayMode);
-            }
-
-            buf.removeLeading(1);
-            state = NEUTRAL;
-            respond(&ACK, 1);
-            break;
-
-        case FILL_DISPLAY_INC:
-            displayMode = toDisplayMode(buf[0]);
-
-            if (displayMode == FlipdotDisplay::OVERRIDE) {
-                dsp->fill();
-            } else {
-                BitArray filled (dsp->get_number_of_pixels());
-                filled.set();
-                dsp->display(filled, displayMode);
-            }
-
-            buf.removeLeading(1);
-            state = NEUTRAL;
-            respond(&ACK, 1);
-            break;
-
-        NEXT_STATE(SHOW_TEXT_INC, SHOW_TEXT_LEN_ALIGN)
         NEXT_STATE(SHOW_TEXT_LEN_ALIGN, SHOW_TEXT_CHARS)
 
         case SHOW_TEXT_CHARS:
-            len = (buf[2] & 0xFC) >> 2;
+            len = (buf[1] & 0xFC) >> 2;
 
-            if (cursor - 2 < len) {
+            if (cursor - 1 < len) {
                 cursor++;
             } else {
-                displayMode = toDisplayMode(buf[1]);
-                PixelString::TextAlignment alignment = toAlignment(buf[2]);
+                PixelString::TextAlignment alignment = toAlignment(buf[1]);
 
                 uint8_t receivedBytes[len];
                 for (size_t i = 0; i < len; i++) {
-                    receivedBytes[i] = buf[i + 3];
+                    receivedBytes[i] = buf[i + 2];
                 }
 
                 revertCursor(ACK);
 
                 std::string str = std::string((char*)&receivedBytes[0], len);
                 ESP_LOGI(TAG, "string  of len %d received = %s", len, str.c_str());
-                dsp->display_string(str, alignment, displayMode);
+                dsp->display_string(str, alignment);
             }
-            break;
-
-        case SET_PIXEL_INC:
-            displayMode = toDisplayMode(buf[0]);
-            buf.removeLeading(1);
-            state = SET_PIXEL_NEXT;
             break;
 
         case SET_PIXEL_NEXT:
@@ -244,7 +211,7 @@ bool CommandInterpreter::process() {
             uint8_t y = buf[2];
 
             ESP_LOGI(TAG, "(%d, %d) = %d", x, y, show);
-            dsp->flip_single_pixel(x, y, show, displayMode);
+            dsp->flip_single_pixel(x, y, show);
 
             revertCursor(ACK);
             state = SET_PIXEL_NEXT;
@@ -368,6 +335,34 @@ bool CommandInterpreter::process() {
             state = GET_PIXEL_NEXT;
         }   break;
 
+        case SET_INC_MODE:
+
+            if (b > FlipdotDisplay::INCREMENTAL) {
+                respond(ADDR_INVALID);
+            } else {
+                dsp->setDisplayMode((FlipdotDisplay::DisplayMode) b);
+                respond(ACK);
+            }
+
+            buf.removeLeading(1);
+            state = NEUTRAL;
+            break;
+
+        case SET_OVERLAY_MODE:
+            buf.removeLeading(1);
+
+            if (b > FlipdotDisplay::NEGATIVE) {
+                respond(ADDR_INVALID);
+            } else {
+                dsp->setOverlayMode((FlipdotDisplay::OverlayMode) b);
+                respond(ACK);
+            }
+
+            buf.removeLeading(1);
+            state = NEUTRAL;
+            break;
+
+
         case SET_LED_TRX_MODE:
 
             if (buf[0] > WS2812Controller::TransitionMode::SLIDE_QUICK ||
@@ -375,7 +370,20 @@ bool CommandInterpreter::process() {
                 respond(ADDR_INVALID);
             } else {
                 bool success = led_ctrl->setTransitionMode((WS2812Controller::TransitionMode) buf[0]);
-                respond(success ? &ACK : &BUFFER_OVERFLOW, 1);
+                respond(success ? ACK : BUFFER_OVERFLOW);
+            }
+
+            buf.removeLeading(1);
+            state = NEUTRAL;
+            break;
+
+        case SET_TRX_MODE:
+
+            if (b > FlipdotDisplay::BOTTOM_UP) {
+                respond(ADDR_INVALID);
+            } else {
+                dsp->setTransitionMode((FlipdotDisplay::TransitionMode) b);
+                respond(ACK);
             }
 
             buf.removeLeading(1);

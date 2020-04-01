@@ -135,7 +135,7 @@ namespace HttpServer {
         return ESP_OK;
     }
 
-    esp_err_t receive_and_display_bitset(httpd_req_t *req, FlipdotDisplay::DisplayMode display_mode) {
+    esp_err_t receive_and_display_bitset(httpd_req_t *req) {
         char content[256];
         size_t content_size = 0;
         if (read_content(req, content, sizeof(content) - 1, &content_size) != ESP_OK) {
@@ -151,21 +151,21 @@ namespace HttpServer {
         BitArray bits (display->get_number_of_pixels());
         bits.copy_from((uint8_t*) content, content_size);
 
-        display->display(bits, display_mode);
+        display->display(bits);
         respond_200(req, "OK\n");
 
         return ESP_OK;
     }
 
     esp_err_t bitset_post_handler(httpd_req_t *req) {
-        return receive_and_display_bitset(req, FlipdotDisplay::OVERRIDE);
+        return receive_and_display_bitset(req);
     }
 
     esp_err_t bitset_put_handler(httpd_req_t *req) {
-        return receive_and_display_bitset(req, FlipdotDisplay::INCREMENTAL);
+        return receive_and_display_bitset(req);
     }
 
-    esp_err_t receive_and_display_message(httpd_req_t *req, FlipdotDisplay::DisplayMode display_mode) {
+    esp_err_t receive_and_display_message(httpd_req_t *req) {
         char content[256];
         size_t content_size = 0;
         if (read_content(req, content, sizeof(content) - 1, &content_size) != ESP_OK) {
@@ -193,16 +193,16 @@ namespace HttpServer {
         ESP_LOGI(TAG_HTTP, "%s", content);
         respond_200(req, "OK\n");
 
-        display->display_string(str, alignment, display_mode);
+        display->display_string(str, alignment);
         return ESP_OK;
     }
 
     esp_err_t message_post_handler(httpd_req_t *req) {
-        return receive_and_display_message(req, FlipdotDisplay::OVERRIDE);
+        return receive_and_display_message(req);
     }
 
     esp_err_t message_put_handler(httpd_req_t *req) {
-        return receive_and_display_message(req, FlipdotDisplay::INCREMENTAL);
+        return receive_and_display_message(req);
     }
 
     esp_err_t led_post_handler(httpd_req_t *req) {

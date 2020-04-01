@@ -91,8 +91,8 @@ extern "C" void app_main() {
     pins.oe_sel = PIN_NUM_OE_SEL;
 
     flipdot_driver_timing_config_t timing;
-    timing.set_usecs = 400;     //110
-    timing.reset_usecs = 400;   //140
+    timing.set_usecs = 200;     //110
+    timing.reset_usecs = 200;   //140
 
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
 
@@ -122,8 +122,8 @@ extern "C" void app_main() {
     HttpServer::set_led_driver(led_drv);
     HttpServer::start();
 
-    xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 8500, NULL, 5, NULL, 0);
-    xTaskCreatePinnedToCore(led_task, "led-task", 5000, NULL, 4, NULL, 1);
+    xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 6000, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(led_task, "led-task", 4000, NULL, 4, NULL, 1);
 
 
     printf("Connections initialized!\n");

@@ -14,7 +14,7 @@
 #define TCP_PORT 3000
 #define TCP_RECV_TIMEOUT_SEC 4
 
-CommandInterpreter* cmx = new CommandInterpreter(1000, &send_response, &close_tcp_connection);
+CommandInterpreter* cmx = new CommandInterpreter(512, &send_response, &close_tcp_connection);
 int listen_sock = 0;
 int connection_sock = 0;
 
@@ -49,7 +49,7 @@ void send_response(const uint8_t* data, size_t len) {
 
 
 void tcp_server_task(void *pvParameters) {
-    char rx_buffer[2048];
+    char rx_buffer[32];
     int addr_family;
     int ip_protocol;
 

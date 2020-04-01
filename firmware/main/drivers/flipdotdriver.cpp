@@ -7,6 +7,7 @@ FlipdotDriver::FlipdotDriver(int module_width_, int module_height_, int device_c
 {
     pins = *pins_;
     timing = *timing_;
+    bound_timing();
 
     total_width = module_width * device_count;
     total_height = module_height;
@@ -88,12 +89,8 @@ void FlipdotDriver::init_gpio() {
     selected_device = 0;
 }
 
-void FlipdotDriver::set_pixel(int x, int y) {
-    flip(x, y, true);
-}
-
-void FlipdotDriver::reset_pixel(int x, int y) {
-    flip(x, y, false);
+void FlipdotDriver::flip(PixelCoord& coord, bool show) {
+    flip(coord.x, coord.y, show);
 }
 
 void FlipdotDriver::flip(int x, int y, bool show) {
@@ -159,22 +156,11 @@ void FlipdotDriver::select_device(int device) {
     tx.rx_buffer = 0;
     tx.tx_buffer = &mask;
 
-    esp_err_t ret;
-
-    ret = gpio_set_level(pins.rclk_sel, 0);
-    ESP_ERROR_CHECK(ret);
-
-    ret = spi_device_transmit(spi, &tx);
-    ESP_ERROR_CHECK(ret);
-
+    gpio_set_level(pins.rclk_sel, 0);
+    ESP_ERROR_CHECK(spi_device_transmit(spi, &tx));
     gpio_set_level(pins.rclk_sel, 1);
-    ESP_ERROR_CHECK(ret);
 
     selected_device = device;
-}
-
-void FlipdotDriver::deselect_device() {
-    select_device(0x00);
 }
 
 uint8_t FlipdotDriver::encode_column(int x) {
@@ -216,4 +202,15 @@ void FlipdotDriver::clear_registers() {
     gpio_set_level(pins.clr, 1);
 }
 
+void FlipdotDriver::set_timing(int usecs) {
+    timing.set_usecs = usecs;
+    timing.reset_usecs = usecs;
+    bound_timing();
+}
 
+void FlipdotDriver::bound_timing() {
+    timing.set_usecs = std::min(timing.set_usecs, 1000);
+    timing.set_usecs = std::max(timing.set_usecs, 0);
+    timing.reset_usecs = std::min(timing.reset_usecs, 1000);
+    timing.reset_usecs = std::max(timing.reset_usecs, 0);
+}

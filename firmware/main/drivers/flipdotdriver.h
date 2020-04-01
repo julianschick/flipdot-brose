@@ -1,8 +1,9 @@
 #ifndef FLIPDOTDRIVER_H
 #define FLIPDOTDRIVER_H
 
-#include "driver/gpio.h"
-#include "driver/spi_master.h"
+#include <driver/gpio.h>
+#include <driver/spi_master.h>
+#include "../util/pixelmap.h"
 
 typedef struct {
     gpio_num_t ser;
@@ -28,13 +29,14 @@ class FlipdotDriver {
 public:
     FlipdotDriver(int module_width_, int module_height_, int device_count_, flipdot_driver_pins_t* pins_, flipdot_driver_timing_config_t* timing_);
 
-    void set_pixel(int x, int y);
-    void reset_pixel(int x, int y);
+    void flip(PixelCoord& coord, bool show);
     void flip(int x, int y, bool show);
 
     inline int get_width() { return total_width; };
     inline int get_height() { return total_height; };
     inline int get_number_of_pixels() { return total_width * total_height; };
+
+    void set_timing(int usecs);
 
 private:
     flipdot_driver_pins_t pins;
@@ -50,11 +52,12 @@ private:
     void init_gpio();
 
     void select_device(int device);
-    void deselect_device();
     inline uint8_t encode_column(int col);
     inline uint8_t encode_status(int col, int dir);
     inline uint16_t encode_row(int row);
     void clear_registers();
+
+    void bound_timing();
 };
 
 
