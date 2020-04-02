@@ -8,7 +8,7 @@
 #include "libs/blue.h"
 #include "libs/mdns.h"
 #include "libs/wifi.h"
-#include "libs/http_server.h"
+//#include "libs/http_server.h"
 #include "libs/tcp_server.h"
 
 #define PIN_NUM_MOSI GPIO_NUM_13
@@ -23,6 +23,9 @@
 FlipdotDisplay* dsp;
 WS2812Driver* led_drv;
 WS2812Controller* led_ctrl;
+
+TaskHandle_t ledTask;
+TaskHandle_t tcpServerTask;
 
 inline void safety_init() {
     gpio_config_t io_conf;
@@ -118,12 +121,12 @@ extern "C" void app_main() {
     Wifi::setup();
     Blue::setup();
 
-    HttpServer::set_display(dsp);
+    /*HttpServer::set_display(dsp);
     HttpServer::set_led_driver(led_drv);
-    HttpServer::start();
+    HttpServer::start();*/
 
-    xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 6000, NULL, 5, NULL, 0);
-    xTaskCreatePinnedToCore(led_task, "led-task", 4000, NULL, 4, NULL, 1);
+    xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 2600, NULL, 5, &tcpServerTask, 0);
+    xTaskCreatePinnedToCore(led_task, "led-task", 1800, NULL, 4, &ledTask, 1);
 
 
     printf("Connections initialized!\n");

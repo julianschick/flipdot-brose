@@ -8,7 +8,6 @@ idf_component_register(
         "drivers/ws2812driver.cpp"
         "libs/wifi.cpp"
         "libs/nvs.cpp"
-        "libs/http_server.cpp"
         "libs/tcp_server.cpp"
         "libs/comx.cpp"
         "libs/blue.cpp"

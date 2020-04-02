@@ -44,6 +44,19 @@ bool CommandInterpreter::process() {
     switch (state) {
         case NEUTRAL: // cursor == 0
 
+            if (b == 0xE0) {
+
+                uint32_t wm = uxTaskGetStackHighWaterMark(ledTask);
+                printf("led-task watermark = %d\n", wm);
+
+                wm = uxTaskGetStackHighWaterMark(tcpServerTask);
+                printf("tcp-task watermark = %d\n", wm);
+
+                buf.removeLeading(1);
+                respond(ACK);
+
+            } else
+
             if (b == WHOAMI) {
                 uint8_t r[2] = {0x70, 0x07};
                 respond(&r[0], sizeof(r));

@@ -26,13 +26,13 @@ public:
     };
 
     enum TransitionMode {
-        IMMEDIATE = 1,
-        LINEAR_SLOW = 2,
-        LINEAR_MEDIUM = 3,
-        LINEAR_QUICK = 4,
-        SLIDE_SLOW = 5,
-        SLIDE_MEDIUM = 6,
-        SLIDE_QUICK = 7
+        IMMEDIATE           = 0x01,
+        LINEAR_SLOW         = 0x02,
+        LINEAR_MEDIUM       = 0x03,
+        LINEAR_QUICK        = 0x04,
+        SLIDE_SLOW          = 0x05,
+        SLIDE_MEDIUM        = 0x06,
+        SLIDE_QUICK         = 0x07
     };
 
     WS2812Controller(WS2812Driver* drv);

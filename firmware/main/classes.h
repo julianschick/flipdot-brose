@@ -10,4 +10,7 @@ extern WS2812Driver* led_drv;
 #include "controllers/ws2812controller.h"
 extern WS2812Controller* led_ctrl;
 
+extern TaskHandle_t ledTask;
+extern TaskHandle_t tcpServerTask;
+
 #endif //FLIPDOT_CLASSES_H

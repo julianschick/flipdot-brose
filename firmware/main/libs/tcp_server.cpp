@@ -49,7 +49,7 @@ void send_response(const uint8_t* data, size_t len) {
 
 
 void tcp_server_task(void *pvParameters) {
-    char rx_buffer[32];
+    char rx_buffer[64];
     int addr_family;
     int ip_protocol;
 
