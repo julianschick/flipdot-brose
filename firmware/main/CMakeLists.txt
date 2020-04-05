@@ -1,8 +1,8 @@
 idf_component_register(
     SRCS
         "main.cpp"
-        "flipdotdisplay.cpp"
         "commandinterpreter.cpp"
+        "controllers/flipdotdisplay.cpp"
         "controllers/ws2812controller.cpp"
         "drivers/flipdotdriver.cpp"
         "drivers/ws2812driver.cpp"

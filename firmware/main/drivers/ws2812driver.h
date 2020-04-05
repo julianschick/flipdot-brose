@@ -1,7 +1,6 @@
 #ifndef WS2812DRIVER_H
 #define WS2812DRIVER_H
 
-#include "../globals.h"
 #include "driver/rmt.h"
 
 #define BIT_PER_LED 24

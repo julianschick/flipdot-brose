@@ -2,6 +2,7 @@
 
 #include <nvs.h>
 #include <nvs_flash.h>
+#include <freertos/task.h>
 
 #define TAG "ws2812-controller"
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO
@@ -13,11 +14,11 @@
 WS2812Controller::WS2812Controller(WS2812Driver *drv) : drv(drv) {
     transitionMode = LINEAR_SLOW;
 
-    size = drv->get_led_count();
+    n = drv->get_led_count();
     state = drv->get_state();
 
-    startState = new color_t[size];
-    endState = new color_t[size];
+    startState = new color_t[n];
+    endState = new color_t[n];
 
     queue = xQueueCreate(10, sizeof(LedCommandMsg));
     mutex = xSemaphoreCreateMutex();
@@ -47,7 +48,7 @@ bool WS2812Controller::setAllLedsToSameColor(color_t color) {
 }
 
 void WS2812Controller::setAllLedsToSameColor_(color_t* c) {
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < n; i++) {
         endState[i] = *c;
     }
     delete c;
@@ -70,7 +71,7 @@ void WS2812Controller::setLeds_(std::vector<LedChangeCommand> *changes) {
 }
 
 color_t* WS2812Controller::getAll() {
-    color_t* result = new color_t[size];
+    color_t* result = new color_t[n];
     xSemaphoreTake(mutex, portMAX_DELAY);
     copy(result, state);
     xSemaphoreGive(mutex);
@@ -111,7 +112,7 @@ void WS2812Controller::cycle() {
     }
 
     xSemaphoreTake(mutex, portMAX_DELAY);
-    for (size_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < n; i++) {
         switch (transitionMode) {
             case LINEAR_QUICK:
             case LINEAR_MEDIUM:
@@ -123,10 +124,15 @@ void WS2812Controller::cycle() {
                                      (float) endState[i].brg.green * pos;
                 state[i].brg.blue = (float) startState[i].brg.blue * (1 - pos) +
                                     (float) endState[i].brg.blue * pos;
-                state[i].brg.padding = (float) startState[i].brg.padding * (1 - pos) +
-                                       (float) endState[i].brg.padding * pos;
 
                 break;
+            case SLIDE_QUICK:
+            case SLIDE_MEDIUM:
+            case SLIDE_SLOW:
+                state[i].brg = i < pos * n ? endState[i].brg : startState[i].brg;
+                break;
+
+
             default:
                 break;
         }
@@ -172,7 +178,7 @@ void WS2812Controller::startTransition() {
 }
 
 void WS2812Controller::copy(color_t *dest, color_t *src) {
-    xthal_memcpy(dest, src, sizeof(color_t)*size);
+    xthal_memcpy(dest, src, sizeof(color_t)*n);
 }
 
 void WS2812Controller::executeCommand(WS2812Controller::LedCommandMsg &msg) {
@@ -203,10 +209,10 @@ void WS2812Controller::saveState() {
 void WS2812Controller::readState() {
     ESP_LOGI(TAG, "Reading state from flash");
 
-    size_t s = sizeof(color_t)*size;
+    size_t size = sizeof(color_t)*n;
     nvs_handle_t nvs;
     nvs_open("led", NVS_READONLY, &nvs);
-    nvs_get_blob(nvs, "state", endState, &s);
+    nvs_get_blob(nvs, "state", endState, &size);
     nvs_close(nvs);
 
     lastStateSave = xTaskGetTickCount();

@@ -1,11 +1,11 @@
 #ifndef FLIPDOT_CLASSES_H
 #define FLIPDOT_CLASSES_H
 
-#include "flipdotdisplay.h"
-extern FlipdotDisplay* dsp;
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
-#include "drivers/ws2812driver.h"
-extern WS2812Driver* led_drv;
+#include "controllers/flipdotdisplay.h"
+extern FlipdotDisplay* dsp;
 
 #include "controllers/ws2812controller.h"
 extern WS2812Controller* led_ctrl;

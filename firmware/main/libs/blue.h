@@ -1,13 +1,12 @@
 #ifndef BLUETOOTH_H_INCLUDED
 #define BLUETOOTH_H_INCLUDED
 
-#include "../globals.h"
+#include <string>
+#include <esp_gap_bt_api.h>
+#include <esp_spp_api.h>
 
-#include "esp_bt.h"
-#include "esp_bt_main.h"
-#include "esp_gap_bt_api.h"
-#include "esp_bt_device.h"
-#include "esp_spp_api.h"
+#define SPP_SERVER_NAME "Flipdot/Serial"
+#define BT_DEVICE_NAME "Flipdot1"
 
 using namespace std;
 

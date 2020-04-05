@@ -1,5 +1,7 @@
 #include "flipdotdriver.h"
 
+#include <algorithm> //std::min/std::max
+
 FlipdotDriver::FlipdotDriver(int module_width_, int module_height_, int device_count_,
         flipdot_driver_pins_t* pins_,
         flipdot_driver_timing_config_t* timing_) :

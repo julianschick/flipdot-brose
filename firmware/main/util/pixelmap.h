@@ -1,7 +1,7 @@
 #ifndef COORDMAP_H
 #define COORDMAP_H
 
-#include "../globals.h"
+#include <stddef.h> //size_t
 
 typedef struct {
     size_t x;

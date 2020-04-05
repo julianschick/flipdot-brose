@@ -30,7 +30,7 @@ private:
         GET_PIXEL_NEXT, GET_PIXEL_X, GET_PIXEL_Y,
 
         SET_INC_MODE,
-        SET_OVERLAY_MODE,
+        SET_FLIP_SPEED,
         SET_LED_TRX_MODE,
         SET_TRX_MODE
     };

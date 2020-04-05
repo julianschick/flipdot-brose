@@ -1,6 +1,7 @@
 #include "commandinterpreter.h"
 
 #include <string>
+#include <esp_heap_trace.h>
 #include "util/bitarray.h"
 
 #define TAG "cmx"
@@ -51,6 +52,10 @@ bool CommandInterpreter::process() {
 
                 wm = uxTaskGetStackHighWaterMark(tcpServerTask);
                 printf("tcp-task watermark = %d\n", wm);
+
+                size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+                uint32_t min_free_heap = esp_get_minimum_free_heap_size();
+                printf("free = %d, min free = %d\n", free_heap, min_free_heap);
 
                 buf.removeLeading(1);
                 respond(ACK);
@@ -139,7 +144,7 @@ bool CommandInterpreter::process() {
             // set pixel overlay mode
             } else if (b == 0xD1) {
                 buf.removeLeading(1);
-                state = SET_OVERLAY_MODE;
+                state = SET_FLIP_SPEED;
 
             // set led transition mode
             } else if (b == 0xD2) {
@@ -361,18 +366,13 @@ bool CommandInterpreter::process() {
             state = NEUTRAL;
             break;
 
-        case SET_OVERLAY_MODE:
-            buf.removeLeading(1);
-
-            if (b > FlipdotDisplay::NEGATIVE) {
-                respond(ADDR_INVALID);
+        case SET_FLIP_SPEED:
+            if (cursor < 1) {
+                cursor++;
             } else {
-                dsp->setOverlayMode((FlipdotDisplay::OverlayMode) b);
-                respond(ACK);
+                //do nothing so far
+                revertCursor(ACK);
             }
-
-            buf.removeLeading(1);
-            state = NEUTRAL;
             break;
 
 

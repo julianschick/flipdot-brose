@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <sstream>
+#include <xtensa/hal.h> //memcpy
 
 #define TAG "bitarray"
 #include <esp_log.h>

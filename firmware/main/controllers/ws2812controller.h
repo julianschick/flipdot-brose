@@ -48,7 +48,7 @@ private:
     void setLeds_(std::vector<LedChangeCommand> *changes);
 
 public:
-    size_t getLedCount() { return size; };
+    size_t getLedCount() { return n; };
     color_t* getAll();
 
     void cycle();
@@ -60,7 +60,7 @@ public:
 private:
     WS2812Driver* drv;
 
-    size_t size;
+    size_t n;
     color_t* state;
 
     QueueHandle_t queue;
@@ -83,11 +83,18 @@ private:
     static const uint32_t LINEAR_MEDIUM_DELAY = 25;
     static const uint32_t LINEAR_QUICK_DELAY = 5;
 
+    static const uint32_t SLIDE_SLOW_DELAY = 100;
+    static const uint32_t SLIDE_MEDIUM_DELAY = 50;
+    static const uint32_t SLIDE_QUICK_DELAY = 10;
+
     static int getDelayByMode(TransitionMode mode) {
         switch(mode) {
             case LINEAR_SLOW: return LINEAR_SLOW_DELAY;
             case LINEAR_MEDIUM: return LINEAR_MEDIUM_DELAY;
             case LINEAR_QUICK: return LINEAR_QUICK_DELAY;
+            case SLIDE_SLOW: return SLIDE_SLOW_DELAY;
+            case SLIDE_MEDIUM: return SLIDE_MEDIUM_DELAY;
+            case SLIDE_QUICK: return SLIDE_QUICK_DELAY;
             default: return 0;
         }
     };

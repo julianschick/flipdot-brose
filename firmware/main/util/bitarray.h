@@ -1,7 +1,9 @@
 #ifndef BITARRAY_H
 #define BITARRAY_H
 
-#include "../globals.h"
+#include <stddef.h> //size_t
+#include <stdint.h> //uint8_t, ...
+#include <string>
 
 class BitArray {
 

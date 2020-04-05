@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <sstream>
+
 static std::vector<std::string> split(std::string str, char delimiter) {
     std::stringstream ss(str);
     std::string item;

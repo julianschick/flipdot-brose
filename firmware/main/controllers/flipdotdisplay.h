@@ -2,11 +2,17 @@
 #define FLIPDOTDISPLAY_H
 
 #include <string>
+#include "../util/bitarray.h"
+#include "../util/pixelmap.h"
+#include "../util/pixelstring.h"
+#include "../drivers/flipdotdriver.h"
 
-#include "util/bitarray.h"
-#include "util/pixelmap.h"
-#include "util/pixelstring.h"
-#include "drivers/flipdotdriver.h"
+#define LEFT_TO_RIGHT_COORD(c) c.x = i / h; c.y = i % h
+#define RIGHT_TO_LEFT_COORD(c) c.x = w - 1 - (i / h); c.y = i % h
+#define RANDOM_COORD(c) c.x = randomTransitionMap[i].x; c.y = randomTransitionMap[i].y
+#define TOP_DOWN_COORD(c) c.x = i % w; c.y = i / w
+#define BOTTOM_UP_COORD(c) c.x = i % w; c.y = h - 1 - (i / w)
+
 
 class FlipdotDisplay {
 
@@ -24,19 +30,12 @@ public:
         BOTTOM_UP       = 0x05
     };
 
-    enum OverlayMode {
-        NONE            = 0x00,
-        POSITIVE        = 0x01,
-        NEGATIVE        = 0x02
-    };
-
 public:
     FlipdotDisplay(FlipdotDriver* drv_);
     ~FlipdotDisplay();
 
     void setDisplayMode(DisplayMode mode);
     void setTransitionMode(TransitionMode mode);
-    void setOverlayMode(OverlayMode mode);
 
     void clear();
     void fill();
@@ -48,9 +47,9 @@ public:
     size_t copy_state(uint8_t* buffer, size_t len);
     bool get_pixel(int x, int y);
 
-    inline int get_width() { return drv->get_width(); };
-    inline int get_height() { return drv->get_height(); };
-    inline int get_number_of_pixels() { return drv->get_number_of_pixels(); };
+    inline int get_width() { return w; };
+    inline int get_height() { return h; };
+    inline int get_number_of_pixels() { return n; };
 
     inline bool is_state_known() { return !state_unknown; };
     bool is_valid_index(int x, int y);
@@ -59,20 +58,21 @@ private:
     FlipdotDriver* drv;
     BitArray* state;
     bool state_unknown;
+
     PixelMap* cmap;
+    size_t n, h, w;
 
     BitArray* transition_set;
     BitArray* transition_reset;
 
     DisplayMode displayMode;
     TransitionMode trxMode;
-    OverlayMode overlayMode;
 
-    PixelCoord** transitionMaps;
+    PixelCoord* randomTransitionMap;
 
     void display_current_state();
-    void buildTransitionMaps();
-    void reshuffleRandomTransitionMap();
+    void initRandomTrxMap();
+    void reshuffleRandomTrxMap();
 
 };
 

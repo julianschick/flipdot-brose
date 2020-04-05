@@ -20,8 +20,11 @@
 #define PIN_NUM_OE_SEL GPIO_NUM_5
 #define PIN_NUM_OE_CONF GPIO_NUM_15
 
+#define TAG "startup"
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#include <esp_log.h>
+
 FlipdotDisplay* dsp;
-WS2812Driver* led_drv;
 WS2812Controller* led_ctrl;
 
 TaskHandle_t ledTask;
@@ -40,33 +43,6 @@ inline void safety_init() {
 
 void led_task(void *pvParameters) {
 
-    /*color_t c = {{0x00, 0x00, 0x00, 0x00}};
-
-    uint32_t counter = 0;
-
-    while(1) {
-        uint8_t phase = (counter / 256) % 6;
-
-        switch (phase) {
-            case 0: c.brg.green = c.brg.green < 255 ? c.brg.green + 1 : 255; break;
-            case 1: c.brg.red = c.brg.red > 0 ? c.brg.red - 1 : 0; break;
-            case 2: c.brg.blue = c.brg.blue < 255 ? c.brg.blue + 1 : 255; break;
-            case 3: c.brg.green = c.brg.green > 0 ? c.brg.green - 1 : 0; break;
-            case 4: c.brg.red = c.brg.red < 255 ? c.brg.red + 1 : 255; break;
-            case 5: c.brg.blue = c.brg.blue > 0 ? c.brg.blue - 1 : 0; break;
-        }
-
-        led_drv->set_all_colors(c);
-        led_drv->update();
-        vTaskDelay(20 / portTICK_PERIOD_MS);
-        counter++;
-    }*/
-
-    /*vTaskDelay(5000 / portTICK_PERIOD_MS);
-    color_t c = {{0x00, 0xFF, 0x00, 0xFF}};
-
-    led_ctrl->setTransitionMode(WS2812Controller::LINEAR_SLOW);
-    led_ctrl->setAllLedsToSameColor(c);*/
     led_ctrl->readState();
 
     while(1) {
@@ -84,6 +60,8 @@ extern "C" void app_main() {
     gpio_set_level(PIN_NUM_OE_CONF, 1);
     safety_init();
 
+    ESP_LOGI(TAG, "Safety init done");
+
     flipdot_driver_pins_t pins;
     pins.ser = PIN_NUM_MOSI;
     pins.serclk = PIN_NUM_CLK;
@@ -98,21 +76,18 @@ extern "C" void app_main() {
     timing.reset_usecs = 200;   //140
 
     FlipdotDriver *drv = new FlipdotDriver(28, 16, 4, &pins, &timing);
+    ESP_LOGI(TAG, "Flipdot driver initialized");
 
     uint32_t short_period = 28;
     uint32_t long_period = 72;
     ws2812_timing_config_t timing_config = {short_period, long_period, long_period, short_period};
-    led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
-    led_ctrl = new WS2812Controller(led_drv);
-    led_drv->clear();
-
-    printf("Driver initialized!\n");
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    WS2812Driver* led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
+    ESP_LOGI(TAG, "LED driver initialized");
 
     dsp = new FlipdotDisplay(drv);
-
-    printf("Display initialized!\n");
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    led_ctrl = new WS2812Controller(led_drv);
+    led_drv->clear();
+    ESP_LOGI(TAG, "Controllers initialized");
 
     Nvs::setup();
     //ESP_ERROR_CHECK(esp_netif_init());
@@ -125,17 +100,13 @@ extern "C" void app_main() {
     HttpServer::set_led_driver(led_drv);
     HttpServer::start();*/
 
+    ESP_LOGI(TAG, "Network services up");
+
+    ESP_LOGI(TAG, "Starting TCP server task...");
     xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 2600, NULL, 5, &tcpServerTask, 0);
+
+    ESP_LOGI(TAG, "Starting LED task...");
     xTaskCreatePinnedToCore(led_task, "led-task", 1800, NULL, 4, &ledTask, 1);
 
-
-    printf("Connections initialized!\n");
-
-    //dsp->init_by_test();
-
-    //color_t c = {{0x05, 0x10, 0x10, 0x00}};
-    //led_drv->set_all_colors(c);
-    //led_drv->update();
-
-    //printf("Init done!\n");
+    ESP_LOGI(TAG, "Init sequence done");
 }
