@@ -6,11 +6,11 @@
 
 class WS2812Controller {
 
-private:
+public:
+
     enum LedCommand {
         SET_ALL_LEDS,
         SET_LEDS,
-        GET_ALL_LEDS,
         SET_LED_TRX_MODE
     };
 
@@ -19,7 +19,6 @@ private:
         void* data;
     };
 
-public:
     struct LedChangeCommand {
         size_t addr;
         color_t color;
@@ -38,54 +37,54 @@ public:
     WS2812Controller(WS2812Driver* drv);
     ~WS2812Controller();
 
-    bool setTransitionMode(TransitionMode mode);
-    bool setAllLedsToSameColor(color_t color);
-    bool setLeds(std::vector<LedChangeCommand> *changes);
-
-private:
-    void setTransitionMode_(TransitionMode* mode);
-    void setAllLedsToSameColor_(color_t* c);
-    void setLeds_(std::vector<LedChangeCommand> *changes);
+    void setTransitionMode(TransitionMode mode);
+    void setAllLedsToSameColor(color_t color);
+    void setLeds(std::vector<LedChangeCommand> *changes);
 
 public:
     size_t getLedCount() { return n; };
     color_t* getAll();
 
-    void cycle();
-    bool isBusy();
-
+    bool saveStateIfNecessary();
     void saveState();
     void readState();
 
+    inline void setMutex(SemaphoreHandle_t m) { mutex = m; };
+    inline void lock() {
+        if (mutex != nullptr) {
+            xSemaphoreTake(mutex, portMAX_DELAY);
+        }
+    }
+    inline void unlock() {
+        if (mutex != nullptr) {
+            xSemaphoreGive(mutex);
+        }
+    }
+
 private:
     WS2812Driver* drv;
+    SemaphoreHandle_t mutex = nullptr;
 
     size_t n;
     color_t* state;
 
-    QueueHandle_t queue;
-    SemaphoreHandle_t mutex;
-
     TransitionMode transitionMode;
     color_t* startState;
     color_t* endState;
-    uint8_t transitionPosition = 0;
-    bool inTransition = false;
     int64_t lastCycle = 0;
 
     // for nvs storage
     bool newState = false;
     bool loadingFromNvs = false;
-    TickType_t lastStateSave = 0;
 
     // in milliseconds
     static const uint32_t LINEAR_SLOW_DELAY = 50;
     static const uint32_t LINEAR_MEDIUM_DELAY = 25;
     static const uint32_t LINEAR_QUICK_DELAY = 5;
 
-    static const uint32_t SLIDE_SLOW_DELAY = 100;
-    static const uint32_t SLIDE_MEDIUM_DELAY = 50;
-    static const uint32_t SLIDE_QUICK_DELAY = 10;
+    static const uint32_t SLIDE_SLOW_DELAY = 50;
+    static const uint32_t SLIDE_MEDIUM_DELAY = 25;
+    static const uint32_t SLIDE_QUICK_DELAY = 5;
 
     static int getDelayByMode(TransitionMode mode) {
         switch(mode) {
@@ -99,9 +98,8 @@ private:
         }
     };
 
-    void startTransition();
+    void transition();
     void copy(color_t* dest, color_t* src);
-    void executeCommand(LedCommandMsg& msg);
 
 
 

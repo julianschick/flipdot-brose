@@ -3,6 +3,7 @@
 #include "drivers/flipdotdriver.h"
 #include "drivers/ws2812driver.h"
 #include "controllers/ws2812controller.h"
+#include "buffers/ws2812buffer.h"
 
 #include "libs/nvs.h"
 #include "libs/blue.h"
@@ -26,6 +27,7 @@
 
 FlipdotDisplay* dsp;
 WS2812Controller* led_ctrl;
+WS2812Buffer* ledBuffer;
 
 TaskHandle_t ledTask;
 TaskHandle_t tcpServerTask;
@@ -44,12 +46,16 @@ inline void safety_init() {
 void led_task(void *pvParameters) {
 
     led_ctrl->readState();
+    TickType_t lastStateSave = xTaskGetTickCount();
 
     while(1) {
-        led_ctrl->cycle();
 
-        if (!led_ctrl->isBusy()) {
-            vTaskDelay(1);
+        ledBuffer->executeNext(1000);
+
+        if ((xTaskGetTickCount() - lastStateSave)*portTICK_PERIOD_MS > 10*1000) {
+            if (led_ctrl->saveStateIfNecessary()) {
+                lastStateSave = xTaskGetTickCount();
+            }
         }
     }
 
@@ -87,6 +93,7 @@ extern "C" void app_main() {
     dsp = new FlipdotDisplay(drv);
     led_ctrl = new WS2812Controller(led_drv);
     led_drv->clear();
+    ledBuffer = new WS2812Buffer(led_ctrl, 10);
     ESP_LOGI(TAG, "Controllers initialized");
 
     Nvs::setup();

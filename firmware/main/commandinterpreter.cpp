@@ -125,7 +125,7 @@ bool CommandInterpreter::process() {
             } else if (b == 0xC0) {
                 buf.removeLeading(1);
 
-                color_t *data = led_ctrl->getAll();
+                color_t *data = ledBuffer->getAll();
                 uint8_t replyData[led_ctrl->getLedCount() * 3];
 
                 for (size_t i = 0; i < led_ctrl->getLedCount(); i++) {
@@ -133,6 +133,7 @@ bool CommandInterpreter::process() {
                     replyData[i * 3 + 1] = data[i].brg.green;
                     replyData[i * 3 + 2] = data[i].brg.blue;
                 }
+                delete[] data;
 
                 respond(&replyData[0], sizeof(replyData));
 
@@ -248,7 +249,7 @@ bool CommandInterpreter::process() {
                      0xFF
                  }};
 
-                bool success = led_ctrl->setAllLedsToSameColor(c);
+                bool success = ledBuffer->setAllLedsToSameColor(c);
 
                 revertCursor(success ? ACK : BUFFER_OVERFLOW);
                 state = SET_ALL_LEDS_NEXT;
@@ -293,7 +294,7 @@ bool CommandInterpreter::process() {
                         }
                     }
 
-                    bool success = led_ctrl->setLeds(cmds);
+                    bool success = ledBuffer->setLeds(cmds);
                     revertCursor(success ? ACK : BUFFER_OVERFLOW);
                 } else {
                     state = NEUTRAL;
@@ -382,7 +383,7 @@ bool CommandInterpreter::process() {
                 buf[0] < WS2812Controller::TransitionMode::IMMEDIATE) {
                 respond(ADDR_INVALID);
             } else {
-                bool success = led_ctrl->setTransitionMode((WS2812Controller::TransitionMode) buf[0]);
+                bool success = ledBuffer->setTransitionMode((WS2812Controller::TransitionMode) buf[0]);
                 respond(success ? ACK : BUFFER_OVERFLOW);
             }
 
