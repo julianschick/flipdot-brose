@@ -1,4 +1,4 @@
-#include "globals.h"
+#include "names.h"
 
 #include "drivers/flipdotdriver.h"
 #include "drivers/ws2812driver.h"
@@ -31,6 +31,7 @@ WS2812Buffer* ledBuffer;
 
 TaskHandle_t ledTask;
 TaskHandle_t tcpServerTask;
+TaskHandle_t flipdotTask;
 
 inline void safety_init() {
     gpio_config_t io_conf;
@@ -43,7 +44,7 @@ inline void safety_init() {
     gpio_set_level(PIN_NUM_OE_CONF, 1);
 }
 
-void led_task(void *pvParameters) {
+void led_task(void* pvParameters) {
 
     led_ctrl->readState();
     TickType_t lastStateSave = xTaskGetTickCount();
@@ -52,13 +53,19 @@ void led_task(void *pvParameters) {
 
         ledBuffer->executeNext(1000);
 
-        if ((xTaskGetTickCount() - lastStateSave)*portTICK_PERIOD_MS > 10*1000) {
+        if ((xTaskGetTickCount() - lastStateSave)*portTICK_PERIOD_MS > 20*1000) {
             if (led_ctrl->saveStateIfNecessary()) {
                 lastStateSave = xTaskGetTickCount();
             }
         }
     }
 
+}
+
+void flipdot_task(void* pvParameters) {
+    while(1) {
+        vTaskDelay(1);
+    }
 }
 
 extern "C" void app_main() {
@@ -113,7 +120,10 @@ extern "C" void app_main() {
     xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 2600, NULL, 5, &tcpServerTask, 0);
 
     ESP_LOGI(TAG, "Starting LED task...");
-    xTaskCreatePinnedToCore(led_task, "led-task", 1800, NULL, 4, &ledTask, 1);
+    xTaskCreatePinnedToCore(led_task, "led-task", 1800, NULL, 4, &ledTask, 0);
+
+    ESP_LOGI(TAG, "Starting flipdot task...");
+    xTaskCreatePinnedToCore(flipdot_task, "flipdot-task", 100, NULL, 4, &flipdotTask, 1);
 
     ESP_LOGI(TAG, "Init sequence done");
 }

@@ -1,8 +1,7 @@
 #include "ws2812controller.h"
 
-#include <nvs.h>
-#include <nvs_flash.h>
 #include <freertos/task.h>
+#include "../libs/nvs.h"
 
 #define TAG "ws2812-controller"
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO
@@ -149,11 +148,8 @@ bool WS2812Controller::saveStateIfNecessary() {
 void WS2812Controller::saveState() {
     ESP_LOGI(TAG, "Saving state to flash");
 
-    /*nvs_handle_t nvs;
-    nvs_open("led", NVS_READWRITE, &nvs);
-    nvs_set_blob(nvs, "state", state, sizeof(color_t)*size);
-    nvs_commit(nvs);
-    nvs_close(nvs);*/
+    Nvs::setBlob("led", "state", state, sizeof(color_t) * n);
+    Nvs::commit();
 
     newState = false;
 }
@@ -161,11 +157,8 @@ void WS2812Controller::saveState() {
 void WS2812Controller::readState() {
     ESP_LOGI(TAG, "Reading state from flash");
 
-    size_t size = sizeof(color_t)*n;
-    nvs_handle_t nvs;
-    nvs_open("led", NVS_READONLY, &nvs);
-    nvs_get_blob(nvs, "state", endState, &size);
-    nvs_close(nvs);
+    size_t size = sizeof(color_t) * n;
+    Nvs::getBlob("led", "state", endState, &size);
 
     loadingFromNvs = true;
     transition();

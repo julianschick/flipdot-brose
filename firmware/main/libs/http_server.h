@@ -1,7 +1,7 @@
 #ifndef HTTP_SERVER_H_
 #define HTTP_SERVER_H_
 
-#include "../globals.h"
+#include "../names.h"
 
 //#include <esp_wifi.h>
 //#include <esp_event_loop.h>

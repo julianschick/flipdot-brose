@@ -25,7 +25,7 @@ esp_timer_handle_t Wifi::reconnect_timer;
 void Wifi::setup() {
 
 	wifi_status_bits = xEventGroupCreate();
-	bool active = Nvs::load_bit("wifi_active");
+	bool active = Nvs::getBit("wifi", "active", false);
 
     ip4_addr_set_zero(&wifi_client_ip);
     ip4_addr_set_zero(&zero_ip);
@@ -64,7 +64,8 @@ bool Wifi::enable() {
 
 	if (ret == ESP_OK) {
 		xEventGroupSetBits(wifi_status_bits, SBIT_ACTIVE);
-		Nvs::store_bit("wifi_active", true);
+		Nvs::setBit("wifi", "active", true);
+		Nvs::commit();
 		return true;
 	}
 	return false;
@@ -86,7 +87,8 @@ bool Wifi::disable() {
 		xEventGroupClearBits(wifi_status_bits, SBIT_CONNECTED);
 	}
 
-	Nvs::store_bit("wifi_active", false);
+	Nvs::setBit("wifi", "active", false);
+	Nvs::commit();
 	esp_err_t ret = esp_wifi_stop();
 
 	if (ret == ESP_OK) {

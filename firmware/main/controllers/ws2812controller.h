@@ -101,8 +101,6 @@ private:
     void transition();
     void copy(color_t* dest, color_t* src);
 
-
-
 };
 
 

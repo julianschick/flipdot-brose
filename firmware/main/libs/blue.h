@@ -4,9 +4,7 @@
 #include <string>
 #include <esp_gap_bt_api.h>
 #include <esp_spp_api.h>
-
-#define SPP_SERVER_NAME "Flipdot/Serial"
-#define BT_DEVICE_NAME "Flipdot1"
+#include "../names.h"
 
 using namespace std;
 
