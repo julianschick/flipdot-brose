@@ -195,7 +195,6 @@ esp_err_t Wifi::wifi_event_handler(void *ctx, system_event_t *event) {
             ip4_addr_set_zero(&wifi_client_ip);
             xSemaphoreGive(ip_semaphore);
 
-
             if ((xEventGroupGetBits(wifi_status_bits) & SBIT_ACTIVE) != 0 &&
             	number_of_retries < max_retries) {
             	ESP_LOGI(TAG, "Try to reconnect (retry %d of %d)...", number_of_retries + 1, max_retries);

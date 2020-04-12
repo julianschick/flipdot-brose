@@ -64,7 +64,7 @@ void led_task(void* pvParameters) {
 
 void flipdot_task(void* pvParameters) {
     while(1) {
-        vTaskDelay(1);
+        vTaskDelay(100);
     }
 }
 
@@ -123,7 +123,7 @@ extern "C" void app_main() {
     xTaskCreatePinnedToCore(led_task, "led-task", 1800, NULL, 4, &ledTask, 0);
 
     ESP_LOGI(TAG, "Starting flipdot task...");
-    xTaskCreatePinnedToCore(flipdot_task, "flipdot-task", 100, NULL, 4, &flipdotTask, 1);
+    xTaskCreatePinnedToCore(flipdot_task, "flipdot-task", 256, NULL, 4, &flipdotTask, 1);
 
     ESP_LOGI(TAG, "Init sequence done");
 }
