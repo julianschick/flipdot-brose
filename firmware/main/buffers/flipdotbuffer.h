@@ -54,11 +54,15 @@ public:
     bool setFlipSpeed(uint16_t pixelsPerSecond);
     bool setTransitionMode(FlipdotDisplay::TransitionMode trxMode);
 
+    size_t getBitset(uint8_t* buffer, size_t len);
     int getNumberOfPixels() { return ctrl->get_number_of_pixels(); };
     bool isPixelValid(int x, int y) { return ctrl->is_valid_index(x, y); };
     bool isStateKnown();
     bool getPixel(int x, int y);
-    size_t getBitset(uint8_t* buffer, size_t len);
+    FlipdotDisplay::DisplayMode getDisplayMode();
+    uint16_t getFlipSpeed();
+    FlipdotDisplay::TransitionMode getTransitionMode();
+
 
     bool executeNext(int timeout);
 

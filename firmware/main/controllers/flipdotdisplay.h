@@ -39,8 +39,11 @@ public:
     ~FlipdotDisplay();
 
     void setDisplayMode(DisplayMode mode);
+    DisplayMode getDisplayMode() { return displayMode; };
     void setTransitionMode(TransitionMode mode);
+    TransitionMode getTransitionMode() { return trxMode; };
     void setPixelsPerSecond(uint16_t pixelsPerSecond);
+    uint16_t getPixelsPerSecond() { return pixelsPerSecond; };
 
     void clear();
     void fill();
@@ -60,6 +63,16 @@ public:
     bool is_valid_index(int x, int y);
 
     inline void setMutex(SemaphoreHandle_t m) { mutex = m; };
+    inline void lock() {
+        if (mutex != nullptr) {
+            xSemaphoreTake(mutex, portMAX_DELAY);
+        }
+    }
+    inline void unlock() {
+        if (mutex != nullptr) {
+            xSemaphoreGive(mutex);
+        }
+    }
 
 private:
     FlipdotDriver* drv;

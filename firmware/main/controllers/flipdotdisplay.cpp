@@ -50,17 +50,23 @@ FlipdotDisplay::~FlipdotDisplay() {
 
 void FlipdotDisplay::setDisplayMode(DisplayMode mode) {
     ESP_LOGD(TAG, "Setting display mode %d", mode);
+    lock();
     displayMode = mode;
+    unlock();
 }
 
 void FlipdotDisplay::setTransitionMode(TransitionMode mode) {
     ESP_LOGD(TAG, "Setting transition mode %d", mode);
+    lock();
     trxMode = mode;
+    unlock();
 }
 
 void FlipdotDisplay::setPixelsPerSecond(uint16_t pixelsPerSecond) {
     ESP_LOGD(TAG, "Setting pixels per second to %d", pixelsPerSecond);
+    lock();
     this->pixelsPerSecond = pixelsPerSecond;
+    unlock();
 
     flipdot_driver_timing_config_t config;
 
@@ -90,7 +96,7 @@ void FlipdotDisplay::clear() {
     ESP_LOGD(TAG, "Clear display");
 
     if (displayMode == OVERRIDE) {
-        state->reset();
+        lock(); state->reset(); unlock();
         displayCurrentState();
     } else {
         BitArray blank (*state);
@@ -114,11 +120,13 @@ void FlipdotDisplay::fill() {
 
 void FlipdotDisplay::display(const BitArray &new_state) {
     if (state_unknown || displayMode == OVERRIDE) {
-        state->copy_from(new_state);
+        lock(); state->copy_from(new_state); unlock();
         displayCurrentState();
     } else {
+        lock();
         state->transition_vector_to(new_state, *transition_set, *transition_reset);
         state->copy_from(new_state);
+        unlock();
         PixelCoord c;
 
         for (size_t i = 0; i < drv->get_number_of_pixels(); i++) {
@@ -180,7 +188,7 @@ void FlipdotDisplay::flip_single_pixel(int x, int y, bool show) {
 
     // x and y bounds are checked in driver
     drv->flip(x, y, show);
-    state->set(cmap->index(x, y), show);
+    lock(); state->set(cmap->index(x, y), show); unlock();
 }
 
 size_t FlipdotDisplay::copy_state(uint8_t* buffer, size_t len) {
@@ -192,7 +200,6 @@ bool FlipdotDisplay::get_pixel(int x, int y) {
 }
 
 void FlipdotDisplay::displayCurrentState() {
-
     PixelCoord c;
 
     for (size_t i = 0; i < drv->get_number_of_pixels(); i++) {

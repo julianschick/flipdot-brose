@@ -28,6 +28,7 @@ public:
 
     color_t* getAll();
     size_t getLedCount() { return ctrl-> getLedCount(); };
+    WS2812Controller::TransitionMode getTransitionMode();
 
     bool executeNext(int timeout);
 

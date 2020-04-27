@@ -45,7 +45,7 @@ bool CommandInterpreter::process() {
     switch (state) {
         case NEUTRAL: // cursor == 0
 
-            if (b == 0xE0) {
+            if (b == 0xE5) {
 
                 uint32_t wm = uxTaskGetStackHighWaterMark(ledTask);
                 printf("led-task watermark = %d\n", wm);
@@ -155,10 +155,34 @@ bool CommandInterpreter::process() {
                 buf.removeLeading(1);
                 state = SET_LED_TRX_MODE;
 
-            // set transition mode
+            // set pixel transition mode
             } else if (b == 0xD3) {
                 buf.removeLeading(1);
                 state = SET_TRX_MODE;
+
+            // get pixel incremental mode
+            } else if (b == 0xE0) {
+                buf.removeLeading(1);
+                respond(flipdotBuffer->getDisplayMode());
+
+            // get pixel flip speed
+            } else if (b == 0xE1) {
+                buf.removeLeading(1);
+                uint16_t flipSpeed = flipdotBuffer->getFlipSpeed();
+                uint8_t response[2];
+                response[0] = flipSpeed & 0x00FF;
+                response[1] = (flipSpeed >> 8) & 0xFF;
+                respond(&response[0], 2);
+
+            // get led transition mode
+            } else if (b == 0xE2) {
+                buf.removeLeading(1);
+                respond(ledBuffer->getTransitionMode());
+
+            // get pixel transition mode
+            } else if (b == 0xE3) {
+                buf.removeLeading(1);
+                respond(flipdotBuffer->getTransitionMode());
 
             // invalid command
             } else {

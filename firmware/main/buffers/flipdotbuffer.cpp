@@ -89,6 +89,27 @@ size_t FlipdotBuffer::getBitset(uint8_t *buffer, size_t len) {
     return result;
 }
 
+FlipdotDisplay::DisplayMode FlipdotBuffer::getDisplayMode() {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    FlipdotDisplay::DisplayMode result = ctrl->getDisplayMode();
+    xSemaphoreGive(mutex);
+    return result;
+}
+
+uint16_t FlipdotBuffer::getFlipSpeed() {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    uint16_t result = ctrl->getPixelsPerSecond();
+    xSemaphoreGive(mutex);
+    return result;
+}
+
+FlipdotDisplay::TransitionMode FlipdotBuffer::getTransitionMode() {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    FlipdotDisplay::TransitionMode result = ctrl->getTransitionMode();
+    xSemaphoreGive(mutex);
+    return result;
+}
+
 void FlipdotBuffer::executeCommand(FlipdotBuffer::FlipdotCommandMsg &msg) {
 
     switch (msg.cmd) {

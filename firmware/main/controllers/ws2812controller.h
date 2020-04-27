@@ -33,6 +33,7 @@ public:
 public:
     size_t getLedCount() { return n; };
     color_t* getAll();
+    TransitionMode getTransitionMode() { return transitionMode; };
 
     bool saveStateIfNecessary();
     void saveState();

@@ -25,7 +25,9 @@ WS2812Controller::~WS2812Controller() {
 
 void WS2812Controller::setTransitionMode(TransitionMode mode) {
     ESP_LOGD(TAG, "Set transition mode from %d to %d", transitionMode, mode);
+    lock();
     transitionMode = mode;
+    unlock();
 }
 
 void WS2812Controller::setAllLedsToSameColor(color_t c) {

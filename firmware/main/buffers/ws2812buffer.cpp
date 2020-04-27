@@ -48,6 +48,13 @@ color_t* WS2812Buffer::getAll() {
     return result;
 }
 
+WS2812Controller::TransitionMode WS2812Buffer::getTransitionMode() {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    WS2812Controller::TransitionMode result = ctrl->getTransitionMode();
+    xSemaphoreGive(mutex);
+    return result;
+}
+
 void WS2812Buffer::executeCommand(LedCommandMsg& msg) {
     if (msg.cmd == SET_ALL_LEDS) {
         color_t* c = (color_t*) msg.data;
