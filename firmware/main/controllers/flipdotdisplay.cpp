@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <algorithm>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include "../font/octafont-regular.h"
 #include "../font/octafont-bold.h"
 
@@ -28,7 +30,15 @@ FlipdotDisplay::FlipdotDisplay(FlipdotDriver *drv_) {
     displayMode = INCREMENTAL;
     trxMode = LEFT_TO_RIGHT;
 
-    initRandomTrxMap();
+    mutex = nullptr;
+
+    randomTransitionMap = new PixelCoord[n];
+    for (int i = 0; i < n; i++) {
+        randomTransitionMap[i].x = i / h;
+        randomTransitionMap[i].y = i % h;
+    }
+
+    setPixelsPerSecond(5000);
     reshuffleRandomTrxMap();
 }
 
@@ -48,10 +58,40 @@ void FlipdotDisplay::setTransitionMode(TransitionMode mode) {
     trxMode = mode;
 }
 
+void FlipdotDisplay::setPixelsPerSecond(uint16_t pixelsPerSecond) {
+    ESP_LOGD(TAG, "Setting pixels per second to %d", pixelsPerSecond);
+    this->pixelsPerSecond = pixelsPerSecond;
+
+    flipdot_driver_timing_config_t config;
+
+    // in usecs
+    int waitTime = 0;
+
+    if (pixelsPerSecond <= 1000) {
+        flipTime = 1000;
+        waitTime = 1000000 / pixelsPerSecond - 1000;
+    } else {
+        flipTime = 1000000 / pixelsPerSecond;
+        waitTime = 0;
+    }
+
+    // safety check
+    if (flipTime > 1000) {
+        flipTime = 1000;
+    }
+    drv->set_timing(flipTime);
+
+    waitTimeTask = waitTime / (portTICK_PERIOD_MS*1000);
+    waitTimeUs = waitTime % (portTICK_PERIOD_MS*1000);
+    ESP_LOGD(TAG, "waitTimeTask = %d, waitTimeUs = %d, flipTime = %d", waitTimeTask, waitTimeUs, flipTime);
+}
+
 void FlipdotDisplay::clear() {
+    ESP_LOGD(TAG, "Clear display");
+
     if (displayMode == OVERRIDE) {
         state->reset();
-        display_current_state();
+        displayCurrentState();
     } else {
         BitArray blank (*state);
         blank.reset();
@@ -60,9 +100,11 @@ void FlipdotDisplay::clear() {
 }
 
 void FlipdotDisplay::fill() {
+    ESP_LOGD(TAG, "Fill display");
+
     if (displayMode == OVERRIDE) {
         state->set();
-        display_current_state();
+        displayCurrentState();
     } else {
         BitArray filled (*state);
         filled.set();
@@ -73,7 +115,7 @@ void FlipdotDisplay::fill() {
 void FlipdotDisplay::display(const BitArray &new_state) {
     if (state_unknown || displayMode == OVERRIDE) {
         state->copy_from(new_state);
-        display_current_state();
+        displayCurrentState();
     } else {
         state->transition_vector_to(new_state, *transition_set, *transition_reset);
         state->copy_from(new_state);
@@ -91,8 +133,14 @@ void FlipdotDisplay::display(const BitArray &new_state) {
 
             if ((*transition_set)[idx]) {
                 drv->flip(c, true);
+                if (waitTimeTask > 0 || waitTimeUs > 0) {
+                    wait();
+                }
             } else if ((*transition_reset)[idx]) {
                 drv->flip(c, false);
+                if (waitTimeTask > 0 || waitTimeUs > 0) {
+                    wait();
+                }
             }
         }
 
@@ -143,7 +191,7 @@ bool FlipdotDisplay::get_pixel(int x, int y) {
     return state->get(cmap->index(x, y));
 }
 
-void FlipdotDisplay::display_current_state() {
+void FlipdotDisplay::displayCurrentState() {
 
     PixelCoord c;
 
@@ -156,6 +204,9 @@ void FlipdotDisplay::display_current_state() {
             case BOTTOM_UP:         BOTTOM_UP_COORD(c); break;
         }
         drv->flip(c, state->get(cmap->index(c)));
+        if (waitTimeTask > 0 || waitTimeUs > 0) {
+            wait();
+        }
     }
 
     if (trxMode == RANDOM) {
@@ -170,14 +221,11 @@ bool FlipdotDisplay::is_valid_index(int x, int y) {
            0 <= y && y < drv->get_height();
 }
 
-void FlipdotDisplay::initRandomTrxMap() {
-    randomTransitionMap = new PixelCoord[n];
-    for (int i = 0; i < n; i++) {
-        randomTransitionMap[i].x = i / h;
-        randomTransitionMap[i].y = i % h;
-    }
-}
-
 void FlipdotDisplay::reshuffleRandomTrxMap() {
     random_shuffle(randomTransitionMap, randomTransitionMap + n);
+}
+
+void FlipdotDisplay::wait() {
+    vTaskDelay(waitTimeTask);
+    ets_delay_us(waitTimeUs);
 }

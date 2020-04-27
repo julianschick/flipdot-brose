@@ -1,10 +1,3 @@
-#include "names.h"
-
-#include "drivers/flipdotdriver.h"
-#include "drivers/ws2812driver.h"
-#include "controllers/ws2812controller.h"
-#include "buffers/ws2812buffer.h"
-
 #include "libs/nvs.h"
 #include "libs/blue.h"
 #include "libs/mdns.h"
@@ -25,9 +18,9 @@
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include <esp_log.h>
 
-FlipdotDisplay* dsp;
 WS2812Controller* led_ctrl;
 WS2812Buffer* ledBuffer;
+FlipdotBuffer* flipdotBuffer;
 
 TaskHandle_t ledTask;
 TaskHandle_t tcpServerTask;
@@ -44,7 +37,7 @@ inline void safety_init() {
     gpio_set_level(PIN_NUM_OE_CONF, 1);
 }
 
-void led_task(void* pvParameters) {
+void led_task(void* params) {
 
     led_ctrl->readState();
     TickType_t lastStateSave = xTaskGetTickCount();
@@ -62,9 +55,9 @@ void led_task(void* pvParameters) {
 
 }
 
-void flipdot_task(void* pvParameters) {
+void flipdot_task(void* params) {
     while(1) {
-        vTaskDelay(100);
+        flipdotBuffer->executeNext(1000);
     }
 }
 
@@ -97,10 +90,11 @@ extern "C" void app_main() {
     WS2812Driver* led_drv = new WS2812Driver(GPIO_NUM_32, RMT_CHANNEL_0, timing_config, 36);
     ESP_LOGI(TAG, "LED driver initialized");
 
-    dsp = new FlipdotDisplay(drv);
+    FlipdotDisplay* dsp = new FlipdotDisplay(drv);
     led_ctrl = new WS2812Controller(led_drv);
     led_drv->clear();
     ledBuffer = new WS2812Buffer(led_ctrl, 10);
+    flipdotBuffer = new FlipdotBuffer(dsp, 10);
     ESP_LOGI(TAG, "Controllers initialized");
 
     Nvs::setup();
@@ -117,13 +111,13 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "Network services up");
 
     ESP_LOGI(TAG, "Starting TCP server task...");
-    xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 2600, NULL, 5, &tcpServerTask, 0);
+    xTaskCreatePinnedToCore(tcp_server_task, "tcp-server-task", 2600, NULL, configMAX_PRIORITIES - 2, &tcpServerTask, 0);
 
     ESP_LOGI(TAG, "Starting LED task...");
-    xTaskCreatePinnedToCore(led_task, "led-task", 1800, NULL, 4, &ledTask, 0);
+    xTaskCreatePinnedToCore(led_task, "led-task", 1800, NULL, configMAX_PRIORITIES - 1, &ledTask, 0);
 
     ESP_LOGI(TAG, "Starting flipdot task...");
-    xTaskCreatePinnedToCore(flipdot_task, "flipdot-task", 256, NULL, 4, &flipdotTask, 1);
+    xTaskCreatePinnedToCore(flipdot_task, "flipdot-task", 2000, NULL, configMAX_PRIORITIES - 1, &flipdotTask, 1);
 
     ESP_LOGI(TAG, "Init sequence done");
 }

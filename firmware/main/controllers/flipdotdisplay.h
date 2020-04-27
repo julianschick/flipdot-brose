@@ -2,6 +2,8 @@
 #define FLIPDOTDISPLAY_H
 
 #include <string>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include "../util/bitarray.h"
 #include "../util/pixelmap.h"
 #include "../util/pixelstring.h"
@@ -21,6 +23,7 @@ public:
         OVERRIDE        = 0x00,
         INCREMENTAL     = 0x01
     };
+    static const DisplayMode DisplayMode_Last = INCREMENTAL;
 
     enum TransitionMode {
         LEFT_TO_RIGHT   = 0x01,
@@ -29,6 +32,7 @@ public:
         TOP_DOWN        = 0x04,
         BOTTOM_UP       = 0x05
     };
+    static const TransitionMode TransitionMode_Last = BOTTOM_UP;
 
 public:
     FlipdotDisplay(FlipdotDriver* drv_);
@@ -36,6 +40,7 @@ public:
 
     void setDisplayMode(DisplayMode mode);
     void setTransitionMode(TransitionMode mode);
+    void setPixelsPerSecond(uint16_t pixelsPerSecond);
 
     void clear();
     void fill();
@@ -54,6 +59,8 @@ public:
     inline bool is_state_known() { return !state_unknown; };
     bool is_valid_index(int x, int y);
 
+    inline void setMutex(SemaphoreHandle_t m) { mutex = m; };
+
 private:
     FlipdotDriver* drv;
     BitArray* state;
@@ -68,12 +75,18 @@ private:
     DisplayMode displayMode;
     TransitionMode trxMode;
 
+    uint16_t pixelsPerSecond;
+    int flipTime;
+    int waitTimeTask;
+    int waitTimeUs;
+
     PixelCoord* randomTransitionMap;
 
-    void display_current_state();
-    void initRandomTrxMap();
-    void reshuffleRandomTrxMap();
+    SemaphoreHandle_t mutex;
 
+    void displayCurrentState();
+    void reshuffleRandomTrxMap();
+    inline void wait();
 };
 
 

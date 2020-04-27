@@ -4,16 +4,20 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "controllers/flipdotdisplay.h"
-extern FlipdotDisplay* dsp;
+//#include "controllers/flipdotdisplay.h"
+//extern FlipdotDisplay* dsp;
 
-#include "controllers/ws2812controller.h"
-extern WS2812Controller* led_ctrl;
+//#include "controllers/ws2812controller.h"
+//extern WS2812Controller* led_ctrl;
 
 #include "buffers/ws2812buffer.h"
 extern WS2812Buffer* ledBuffer;
 
+#include "buffers/flipdotbuffer.h"
+extern FlipdotBuffer* flipdotBuffer;
+
 extern TaskHandle_t ledTask;
 extern TaskHandle_t tcpServerTask;
+extern TaskHandle_t flipdotTask;
 
 #endif //FLIPDOT_CLASSES_H

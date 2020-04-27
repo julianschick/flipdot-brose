@@ -8,17 +8,6 @@ class WS2812Controller {
 
 public:
 
-    enum LedCommand {
-        SET_ALL_LEDS,
-        SET_LEDS,
-        SET_LED_TRX_MODE
-    };
-
-    struct LedCommandMsg {
-        LedCommand cmd;
-        void* data;
-    };
-
     struct LedChangeCommand {
         size_t addr;
         color_t color;

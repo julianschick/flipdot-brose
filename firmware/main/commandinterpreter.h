@@ -51,28 +51,16 @@ private:
     const uint8_t  ADDR_INVALID = 0x86;
     const uint8_t BUFFER_OVERFLOW = 0x87;
 
-    // conversions
-    inline FlipdotDisplay::DisplayMode toDisplayMode(uint8_t byte) {
-        return byte == 0x00 ? FlipdotDisplay::OVERRIDE : FlipdotDisplay::INCREMENTAL;
-    };
 
-    inline PixelString::TextAlignment toAlignment(uint8_t byte) {
+    inline bool toAlignment(uint8_t byte, PixelString::TextAlignment* alignment) {
         uint8_t code = byte & 0x03;
-        PixelString::TextAlignment result = PixelString::LEFT;
 
-        switch (code) {
-            case 0x00:
-                result = PixelString::LEFT;
-                break;
-            case 0x01:
-                result = PixelString::RIGHT;
-                break;
-            case 0x02:
-                result = PixelString::CENTERED;
-                break;
+        if (code < PixelString::TextAlignment_Last) {
+            *alignment = (PixelString::TextAlignment) code;
+            return true;
         }
 
-        return result;
+        return false;
     }
 
     // state machine flow

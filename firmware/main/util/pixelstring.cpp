@@ -4,24 +4,29 @@
 #include "pixelmap.h"
 #include "util.h"
 
+#define TAG "pixelstring"
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include <esp_log.h>
 
 PixelString::PixelString(string &str) : str(str) {}
 
-void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular_font, PixelFont &bold_font,
-                        PixelString::TextAlignment text_alignment) {
+void PixelString::print(
+        BitArray &target,
+        PixelMap &pixelmap,
+        PixelFont &regular_font,
+        PixelFont &bold_font,
+        PixelString::TextAlignment text_alignment) {
 
     PixelCoord coords = {0, 0};
     vector<string> lines = split(str, '\n');
     PixelFont* active_font = &regular_font;
 
     for (int i = 0; i < lines.size(); i++) {
-        ESP_LOGI("display", "line[%d] = %s", i, lines[i].c_str());
+        ESP_LOGD(TAG, "line[%d] = %s", i, lines[i].c_str());
     }
 
-    int line_cursor = 0;
-    while(coords.y + 7 < pixelmap.get_height() && line_cursor < lines.size()) {
-        string& s = lines.at(line_cursor++);
+    for (int l = 0; coords.y + 7 < pixelmap.get_height() && l < lines.size(); l++) {
+        string& s = lines.at(l++);
 
         //dry run
         int x_cursor = 0;
@@ -58,6 +63,10 @@ void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular
                 }
             }
 
+            if (c != 0x11 && c != 0x12) {
+                active_font_before = active_font;
+            }
+
             if (i == s.size() - 1) {
                 line_width = x_cursor;
                 line_char_count = s.size();
@@ -72,7 +81,7 @@ void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular
             case RIGHT: coords.x = pixelmap.get_width() - line_width - 1; break;
         }
 
-        ESP_LOGI("display", "line length = %d, offset = %d, chars = %d, content = %s", line_width, coords.x, line_char_count, s.c_str());
+        ESP_LOGD(TAG, "line length = %d, offset = %d, chars = %d, content = %s", line_width, coords.x, line_char_count, s.c_str());
 
         // actual printing
         for (int i = 0; i < line_char_count; i++) {
@@ -94,6 +103,21 @@ void PixelString::print(BitArray &target, PixelMap &pixelmap, PixelFont &regular
                     target.set8(pixelmap.index(coords), active_font->get_octet(c, j));
                     coords.x++;
                 }
+            }
+
+            if (c != 0x11 && c != 0x12) {
+                active_font_before = active_font;
+            }
+        }
+
+        // do bold/normal switches that are not in printed range
+        for (int i = line_char_count; i < s.size(); i++) {
+            char c = s[i];
+
+            if (c == 0x11) {
+                active_font = &regular_font;
+            } else if (c == 0x12) {
+                active_font = &bold_font;
             }
         }
 

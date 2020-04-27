@@ -53,6 +53,9 @@ bool CommandInterpreter::process() {
                 wm = uxTaskGetStackHighWaterMark(tcpServerTask);
                 printf("tcp-task watermark = %d\n", wm);
 
+                wm = uxTaskGetStackHighWaterMark(flipdotTask);
+                printf("flipdot-task watermark = %d\n", wm);
+
                 size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
                 uint32_t min_free_heap = esp_get_minimum_free_heap_size();
                 printf("free = %d, min free = %d\n", free_heap, min_free_heap);
@@ -74,14 +77,14 @@ bool CommandInterpreter::process() {
 
             // clear display
             } else if (b == 0x91) {
-                dsp->clear();
-                respond(ACK);
+                bool success = flipdotBuffer->clear();
+                respond(success ? ACK : BUFFER_OVERFLOW);
                 buf.removeLeading(1);
 
             // fill display
             } else if (b == 0x92) {
-                dsp->fill();
-                respond(ACK);
+                bool success = flipdotBuffer->fill();
+                respond(success ? ACK : BUFFER_OVERFLOW);
                 buf.removeLeading(1);
 
             // show text message
@@ -108,11 +111,11 @@ bool CommandInterpreter::process() {
             } else if (b == 0xB0) {
                 buf.removeLeading(1);
 
-                if (!dsp->is_state_known()) {
+                if (!flipdotBuffer->isStateKnown()) {
                     respond(&STATE_UNKNOWN, 1);
                 } else {
-                    uint8_t replyData[(dsp->get_number_of_pixels() / 8) + 1];
-                    size_t replyLen = dsp->copy_state(&replyData[0], sizeof(replyData));
+                    uint8_t replyData[(flipdotBuffer->getNumberOfPixels() / 8) + 1];
+                    size_t replyLen = flipdotBuffer->getBitset(&replyData[0], sizeof(replyData));
                     respond(&replyData[0], replyLen);
                 }
 
@@ -126,9 +129,9 @@ bool CommandInterpreter::process() {
                 buf.removeLeading(1);
 
                 color_t *data = ledBuffer->getAll();
-                uint8_t replyData[led_ctrl->getLedCount() * 3];
+                uint8_t replyData[ledBuffer->getLedCount() * 3];
 
-                for (size_t i = 0; i < led_ctrl->getLedCount(); i++) {
+                for (size_t i = 0; i < ledBuffer->getLedCount(); i++) {
                     replyData[i * 3 + 0] = data[i].brg.red;
                     replyData[i * 3 + 1] = data[i].brg.green;
                     replyData[i * 3 + 2] = data[i].brg.blue;
@@ -142,7 +145,7 @@ bool CommandInterpreter::process() {
                 buf.removeLeading(1);
                 state = SET_INC_MODE;
 
-            // set pixel overlay mode
+            // set pixel flip speed
             } else if (b == 0xD1) {
                 buf.removeLeading(1);
                 state = SET_FLIP_SPEED;
@@ -178,11 +181,11 @@ bool CommandInterpreter::process() {
                 for (size_t i = 0; i < len; i++) {
                     receivedBytes[i] = buf[i+2];
                 }
-                BitArray bitset (dsp->get_number_of_pixels());
-                bitset.copy_from(&receivedBytes[0], len);
-                dsp->display(bitset);
+                BitArray* bitset = new BitArray (flipdotBuffer->getNumberOfPixels());
+                bitset->copy_from(&receivedBytes[0], len);
+                bool success = flipdotBuffer->showBitset(bitset);
 
-                revertCursor(ACK);
+                revertCursor(success ? ACK : BUFFER_OVERFLOW);
             }
             break;
 
@@ -194,18 +197,20 @@ bool CommandInterpreter::process() {
             if (cursor - 1 < len) {
                 cursor++;
             } else {
-                PixelString::TextAlignment alignment = toAlignment(buf[1]);
+                PixelString::TextAlignment alignment;
+                if (!toAlignment(buf[1], &alignment)) {
+                    revertCursor(ADDR_INVALID);
+                } else {
+                    uint8_t receivedBytes[len];
+                    for (size_t i = 0; i < len; i++) {
+                        receivedBytes[i] = buf[i + 2];
+                    }
 
-                uint8_t receivedBytes[len];
-                for (size_t i = 0; i < len; i++) {
-                    receivedBytes[i] = buf[i + 2];
+                    std::string str = std::string((char *) &receivedBytes[0], len);
+                    ESP_LOGI(TAG, "string  of len %d received = %s", len, str.c_str());
+                    bool success = flipdotBuffer->showText(str, alignment);
+                    revertCursor(success ? ACK : BUFFER_OVERFLOW);
                 }
-
-                revertCursor(ACK);
-
-                std::string str = std::string((char*)&receivedBytes[0], len);
-                ESP_LOGI(TAG, "string  of len %d received = %s", len, str.c_str());
-                dsp->display_string(str, alignment);
             }
             break;
 
@@ -218,21 +223,22 @@ bool CommandInterpreter::process() {
                 cursor++;
             } else {
                 buf.removeLeading(1);
-                revertCursor(INVALID_COMMAND);
+                respond(INVALID_COMMAND);
+                state = NEUTRAL;
             }
             break;
 
         NEXT_STATE(SET_PIXEL_X, SET_PIXEL_Y);
 
         case SET_PIXEL_Y: {
-            bool show = buf[0];
+            bool visible = buf[0];
             uint8_t x = buf[1];
             uint8_t y = buf[2];
 
-            ESP_LOGI(TAG, "(%d, %d) = %d", x, y, show);
-            dsp->flip_single_pixel(x, y, show);
+            ESP_LOGD(TAG, "(%d, %d) = %d", x, y, visible);
 
-            revertCursor(ACK);
+            bool success = flipdotBuffer->setPixel(x, y, visible);
+            revertCursor(success ? ACK : BUFFER_OVERFLOW);
             state = SET_PIXEL_NEXT;
 
         }   break;
@@ -281,7 +287,7 @@ bool CommandInterpreter::process() {
                     for (size_t i = 0; i < cursor / 4; i++) {
                         uint8_t addr = 0x7F & buf[i*4 + 0];
 
-                        if (addr < led_ctrl->getLedCount()) {
+                        if (addr < ledBuffer->getLedCount()) {
                             color_t c = {{
                                  (uint8_t) buf[i*4 + 3],
                                  (uint8_t) buf[i*4 + 1],
@@ -341,12 +347,12 @@ bool CommandInterpreter::process() {
             uint8_t y = buf[1];
 
             uint8_t replyData;
-            if (!dsp->is_state_known()) {
+            if (!flipdotBuffer->isStateKnown()) {
                 replyData = STATE_UNKNOWN;
-            } else if (!dsp->is_valid_index(x, y)) {
+            } else if (!flipdotBuffer->isPixelValid(x, y)) {
                 replyData = ADDR_INVALID;
             } else {
-                replyData = dsp->get_pixel(x, y);
+                replyData = flipdotBuffer->getPixel(x, y);
             }
 
             respond(&replyData, 1);
@@ -356,11 +362,11 @@ bool CommandInterpreter::process() {
 
         case SET_INC_MODE:
 
-            if (b > FlipdotDisplay::INCREMENTAL) {
+            if (b > FlipdotDisplay::DisplayMode_Last) {
                 respond(ADDR_INVALID);
             } else {
-                dsp->setDisplayMode((FlipdotDisplay::DisplayMode) b);
-                respond(ACK);
+                bool success = flipdotBuffer->setDisplayMode((FlipdotDisplay::DisplayMode) b);
+                respond(success ? ACK : BUFFER_OVERFLOW);
             }
 
             buf.removeLeading(1);
@@ -368,14 +374,18 @@ bool CommandInterpreter::process() {
             break;
 
         case SET_FLIP_SPEED:
+
             if (cursor < 1) {
                 cursor++;
             } else {
-                //do nothing so far
-                revertCursor(ACK);
+                uint8_t lo = buf[0];
+                uint8_t hi = buf[1];
+                uint16_t pixelsPerSecond = (hi << 8) | lo;
+
+                bool success = flipdotBuffer->setFlipSpeed(pixelsPerSecond);
+                revertCursor(success ? ACK : BUFFER_OVERFLOW);
             }
             break;
-
 
         case SET_LED_TRX_MODE:
 
@@ -393,11 +403,11 @@ bool CommandInterpreter::process() {
 
         case SET_TRX_MODE:
 
-            if (b > FlipdotDisplay::BOTTOM_UP) {
+            if (b > FlipdotDisplay::TransitionMode_Last) {
                 respond(ADDR_INVALID);
             } else {
-                dsp->setTransitionMode((FlipdotDisplay::TransitionMode) b);
-                respond(ACK);
+                bool success = flipdotBuffer->setTransitionMode((FlipdotDisplay::TransitionMode) b);
+                respond(success ? ACK : BUFFER_OVERFLOW);
             }
 
             buf.removeLeading(1);

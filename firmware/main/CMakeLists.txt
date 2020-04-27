@@ -2,6 +2,7 @@ idf_component_register(
     SRCS
         "main.cpp"
         "commandinterpreter.cpp"
+        "buffers/flipdotbuffer.cpp"
         "buffers/ws2812buffer.cpp"
         "controllers/flipdotdisplay.cpp"
         "controllers/ws2812controller.cpp"

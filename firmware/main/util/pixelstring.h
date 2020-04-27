@@ -12,8 +12,11 @@ class PixelString {
 
 public:
     enum TextAlignment {
-        LEFT, RIGHT, CENTERED
+        LEFT        = 0x00,
+        RIGHT       = 0x01,
+        CENTERED    = 0x02
     };
+    static const TextAlignment TextAlignment_Last = CENTERED;
 
 public:
     PixelString(string& str);

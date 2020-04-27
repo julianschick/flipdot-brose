@@ -4,8 +4,19 @@
 #include <vector>
 #include "../controllers/ws2812controller.h"
 
-
 class WS2812Buffer {
+
+private:
+    enum LedCommand {
+        SET_ALL_LEDS,
+        SET_LEDS,
+        SET_LED_TRX_MODE
+    };
+
+    struct LedCommandMsg {
+        LedCommand cmd;
+        void* data;
+    };
 
 public:
     WS2812Buffer(WS2812Controller* ctrl, size_t queueLength);
@@ -16,6 +27,7 @@ public:
     bool setLeds(std::vector<WS2812Controller::LedChangeCommand> *changes);
 
     color_t* getAll();
+    size_t getLedCount() { return ctrl-> getLedCount(); };
 
     bool executeNext(int timeout);
 
@@ -25,9 +37,9 @@ private:
     QueueHandle_t queue;
     SemaphoreHandle_t mutex;
 
-    WS2812Controller::LedCommandMsg msg;
+    LedCommandMsg msg;
 
-    void executeCommand(WS2812Controller::LedCommandMsg& msg);
+    void executeCommand(LedCommandMsg& msg);
 
 };
 
