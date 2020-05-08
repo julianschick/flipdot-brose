@@ -1,0 +1,4 @@
+PySide2>=5.14.2.1
+requests>=2.23.0
+bitarray>=1.2.1
+Pillow>=7.1.2
