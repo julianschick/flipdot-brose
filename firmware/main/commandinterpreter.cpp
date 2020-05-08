@@ -261,10 +261,14 @@ bool CommandInterpreter::process() {
 
             ESP_LOGD(TAG, "(%d, %d) = %d", x, y, visible);
 
-            bool success = flipdotBuffer->setPixel(x, y, visible);
-            revertCursor(success ? ACK : BUFFER_OVERFLOW);
-            state = SET_PIXEL_NEXT;
+            if (!flipdotBuffer->isPixelValid(x, y)) {
+                revertCursor(ADDR_INVALID);
+            } else {
+                bool success = flipdotBuffer->setPixel(x, y, visible);
+                revertCursor(success ? ACK : BUFFER_OVERFLOW);
 
+            }
+            state = SET_PIXEL_NEXT;
         }   break;
 
         case SET_ALL_LEDS:
@@ -299,16 +303,16 @@ bool CommandInterpreter::process() {
             break;
 
         case SET_LED_NEXT:
-            ESP_LOGV(TAG, "set_led_next, current = %d, cursor = %d", b, cursor);
 
             if (b == STOP) {
-                ESP_LOGV(TAG, "stopped, cursor = %d", cursor);
 
                 if (cursor > 0) {
+                    size_t n = cursor / 4;
                     std::vector<WS2812Controller::LedChangeCommand>* cmds =
-                            new std::vector<WS2812Controller::LedChangeCommand>(cursor / 4);
+                            new std::vector<WS2812Controller::LedChangeCommand>(n);
 
-                    for (size_t i = 0; i < cursor / 4; i++) {
+                    uint8_t response[n];
+                    for (size_t i = 0; i < n; i++) {
                         uint8_t addr = 0x7F & buf[i*4 + 0];
 
                         if (addr < ledBuffer->getLedCount()) {
@@ -321,11 +325,23 @@ bool CommandInterpreter::process() {
 
                             WS2812Controller::LedChangeCommand cmd = {addr, c};
                             cmds->push_back(cmd);
+                            response[i] = ACK;
+                        } else {
+                            response[i] = ADDR_INVALID;
                         }
                     }
 
                     bool success = ledBuffer->setLeds(cmds);
-                    revertCursor(success ? ACK : BUFFER_OVERFLOW);
+                    if (!success) {
+                        for (int i = 0; i < n; i++) {
+                            if (response[i] == ACK) {
+                                response[i] = BUFFER_OVERFLOW;
+                            }
+                        }
+                    }
+
+                    respond(&response[0], n);
+                    revertCursor();
                 } else {
                     state = NEUTRAL;
                     buf.removeLeading(1);
@@ -344,9 +360,7 @@ bool CommandInterpreter::process() {
 
         case SET_LED_RGB:
             cursor++;
-            ESP_LOGV(TAG, "cursor now %d", cursor);
             if (cursor % 4 == 0) {
-                ESP_LOGV(TAG, "state led next");
                 state = SET_LED_NEXT;
             }
             break;
@@ -379,8 +393,7 @@ bool CommandInterpreter::process() {
                 replyData = flipdotBuffer->getPixel(x, y);
             }
 
-            respond(&replyData, 1);
-            revertCursor(0x00);
+            revertCursor(replyData);
             state = GET_PIXEL_NEXT;
         }   break;
 
@@ -446,6 +459,10 @@ void CommandInterpreter::reset() {
     state = NEUTRAL;
     cursor = 0;
     buf.clear();
+}
+
+void CommandInterpreter::revertCursor() {
+    revertCursor(0x00);
 }
 
 void CommandInterpreter::revertCursor(uint8_t response) {

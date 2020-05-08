@@ -43,7 +43,7 @@ bool WS2812Buffer::setLeds(std::vector<WS2812Controller::LedChangeCommand> *chan
 color_t* WS2812Buffer::getAll() {
     color_t *result = new color_t[ctrl->getLedCount()];
     xSemaphoreTake(mutex, portMAX_DELAY);
-    xthal_memcpy(result, ctrl->getAll(), ctrl->getLedCount());
+    xthal_memcpy(result, ctrl->getAll(), ctrl->getLedCount()*sizeof(color_t));
     xSemaphoreGive(mutex);
     return result;
 }

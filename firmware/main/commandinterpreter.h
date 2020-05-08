@@ -64,6 +64,7 @@ private:
     }
 
     // state machine flow
+    void revertCursor();
     void revertCursor(uint8_t response);
 
     void respond(const uint8_t* data, size_t len);
