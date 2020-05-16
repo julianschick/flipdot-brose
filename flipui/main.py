@@ -1,17 +1,19 @@
 from PySide2.QtWidgets import QApplication, QLabel, QGroupBox, QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QSlider, QGridLayout, QMainWindow, QAction, QFileDialog, QCheckBox, QComboBox, QColorDialog
 from PySide2 import QtCore, QtGui
+from PySide2.QtCore import QCoreApplication
 import socket
 from functools import partial
 import requests
 import concurrent.futures
 from flipdotwidget import FlipdotWidget
 from queue import Queue
-from txworker import TxWorker
+from txworker_old import TxWorker
 import time
 import image2bitarray
 from PIL import Image
 from bitarray import bitarray
 from flipdotdisplay import FlipdotDisplay
+from gui.mainwindow import MainWindow
 
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
@@ -392,7 +394,7 @@ group_leds.layout().addWidget(commit_led_button, 3, 2)
 group_leds.layout().addWidget(color_button, 3, 0)
 
 
-dsp = FlipdotDisplay(4*28, 16, main_window)
+
 #dsp.refresh()
 
 #timer = QtCore.QTimer()
@@ -400,8 +402,12 @@ dsp = FlipdotDisplay(4*28, 16, main_window)
 #timer.timeout.connect(timer_timeout)
 #timer.start()
 
+main_window = MainWindow()
 
-tx_worker.start()
+#tx_worker.start()
 main_window.show()
 #GUI = Window()
+QCoreApplication.setOrganizationName("Julian Schick");
+QCoreApplication.setApplicationName("FlipUI");
+
 app.exec_()

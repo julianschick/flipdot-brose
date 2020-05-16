@@ -40,10 +40,33 @@ class TextAlignment(Enum):
     RIGHT = 2
 
 
+class DisplayMode(Enum):
+    OVERRIDE = 0
+    INCREMENTAL = 1
+
+
+class LEDTransitionMode(Enum):
+    IMMEDIATE = 0x01
+    LINEAR_SLOW = 0x02
+    LINEAR_MEDIUM = 0x03
+    LINEAR_QUICK = 0x04
+    SLIDE_SLOW = 0x05
+    SLIDE_MEDIUM = 0x06
+    SLIDE_QUICK = 0x07
+
+
+class PixelTransitionMode(Enum):
+    LEFT_TO_RIGHT = 0x01
+    RIGHT_TO_LEFT = 0x02
+    RANDOM = 0x03
+    TOP_DOWN = 0x04
+    BOTTOM_UP = 0x05
+
+
 class Command(QObject):
 
-    success = Signal([])
-    error = Signal((ErrorType,))
+    success = Signal(QObject)
+    error = Signal((QObject, ErrorType,))
 
     def __init__(self, name, payload, parent = None):
         QObject.__init__(self, parent)
@@ -75,7 +98,7 @@ class Command(QObject):
         return self._name
 
     def __str__(self):
-        return self.name
+        return f"{self.name} <STATE={self._state.name}>"
 
     @property
     def result(self):
@@ -100,7 +123,6 @@ class Command(QObject):
     @staticmethod
     def bA(list):
         return QByteArray(bytes(list))
-
 
     def transmit(self, socket):
         socket.write(self._payload)
@@ -144,14 +166,14 @@ class Command(QObject):
         self._state = State.ERRONEOUS
         self._errorType = errorType
         print(f"{self} {errorType.name}")
-        self.error.emit(errorType)
+        self.error.emit(self, errorType)
 
     def _success(self):
         self._state = State.SUCCESSFUL
         print(f"{self} success")
-        self.success.emit()
+        self.success.emit(self)
 
-    def _checkSingleAck(self, buffer: QByteArray) -> bool:
+    def _checkSingleByteResponse(self, buffer: QByteArray) -> bool:
         if len(buffer) < 1:
             return False
 
@@ -164,17 +186,7 @@ class Command(QObject):
 
         return True
 
-    def _byteToErrorType(self, b: int):
-        if b == R.ACK:
-            return None
-        elif b == R.BUFFER_OVERFLOW:
-            return ErrorType.BUFFER_OVERFLOW
-        elif b == R.ADDR_INVALID:
-            return ErrorType.BAD_ARGUMENT
-        else:
-            return ErrorType.COMMUNICATION_ERROR
-
-    def _checkMultiResponse(self, buffer: QByteArray, n: int) -> bool:
+    def _checkMultiByteResponse(self, buffer: QByteArray, n: int) -> bool:
         if len(buffer) < n:
             return False
 
@@ -188,6 +200,17 @@ class Command(QObject):
             self._success()
 
         return True
+
+    @staticmethod
+    def _byteToErrorType(b: int):
+        if b == R.ACK:
+            return None
+        elif b == R.BUFFER_OVERFLOW:
+            return ErrorType.BUFFER_OVERFLOW
+        elif b == R.ADDR_INVALID:
+            return ErrorType.BAD_ARGUMENT
+        else:
+            return ErrorType.COMMUNICATION_ERROR
 
 
 class WhoAreYou(Command):
@@ -215,7 +238,7 @@ class ShowBitset(Command):
         super().__init__("ShowBitset", self.bA(bytes([0x90, len(bitset) // 8]) + bitset.tobytes()))
 
     def checkResponse(self, buffer):
-        self._checkSingleAck(buffer)
+        self._checkSingleByteResponse(buffer)
 
 
 class Clear(Command):
@@ -225,7 +248,7 @@ class Clear(Command):
 
     def checkResponse(self, buffer):
         print(buffer)
-        return self._checkSingleAck(buffer)
+        return self._checkSingleByteResponse(buffer)
 
 
 class Fill(Command):
@@ -235,7 +258,7 @@ class Fill(Command):
 
     def checkResponse(self, buffer):
         print(buffer)
-        return self._checkSingleAck(buffer)
+        return self._checkSingleByteResponse(buffer)
 
 
 class ShowTextMessage(Command):
@@ -251,7 +274,7 @@ class ShowTextMessage(Command):
         super().__init__("ShowTextMessage", self.bA(payload))
 
     def checkResponse(self, buffer):
-        return self._checkSingleAck(buffer)
+        return self._checkSingleByteResponse(buffer)
 
 
 class SetPixels(Command):
@@ -269,7 +292,7 @@ class SetPixels(Command):
         super().__init__("SetPixels", self.bA(payload))
 
     def checkResponse(self, buffer: QByteArray):
-        return self._checkMultiResponse(buffer, self._numberOfPixels)
+        return self._checkMultiByteResponse(buffer, self._numberOfPixels)
 
 
 class SetAllLEDs(Command):
@@ -278,7 +301,7 @@ class SetAllLEDs(Command):
         super().__init__("SetAllLEDs", self.bA([0xA0] + list(color) + [T.STOP]))
 
     def checkResponse(self, buffer) -> bool:
-        return self._checkSingleAck(buffer)
+        return self._checkSingleByteResponse(buffer)
 
 
 class SetLEDs(Command):
@@ -295,7 +318,7 @@ class SetLEDs(Command):
         super().__init__("SetLEDs", self.bA(payload))
 
     def checkResponse(self, buffer: QByteArray) -> bool:
-        return self._checkMultiResponse(buffer, self._numberOfCommands)
+        return self._checkMultiByteResponse(buffer, self._numberOfCommands)
 
 
 class GetBitset(Command):
@@ -383,5 +406,134 @@ class GetAllLEDs(Command):
         self._success()
 
 
+class SetIncrementalMode(Command):
 
+    def __init__(self, mode: DisplayMode):
+        super().__init__("SetIncrementalMode", self.bA([0xD0, mode.value]))
+
+    def checkResponse(self, buffer):
+        return self._checkSingleByteResponse(buffer)
+
+
+class SetPixelFlipSpeed(Command):
+
+    def __init__(self, speed: int):
+        super().__init__("SetPixelFlipSpeed", self.bA([0xD1, speed & 0x00FF, (speed & 0xFF00) >> 8]))
+
+    def checkResponse(self, buffer):
+        return self._checkSingleByteResponse(buffer)
+
+
+class SetLEDTransitionMode(Command):
+
+    def __init__(self, mode: LEDTransitionMode):
+        super().__init__("SetLEDTransitionMode", self.bA([0xD2, mode.value]))
+
+    def checkResponse(self, buffer):
+        return self._checkSingleByteResponse(buffer)
+
+
+class SetPixelTransitionMode(Command):
+
+    def __init__(self, mode: PixelTransitionMode):
+        super().__init__("SetPixelTransitionMode", self.bA([0xD3, mode.value]))
+
+    def checkResponse(self, buffer):
+        return self._checkSingleByteResponse(buffer)
+
+
+class GetIncrementalMode(Command):
+
+    def __init__(self):
+        super().__init__("GetIncrementalMode", self.bA([0xE0]))
+        self._mode = None
+
+    @property
+    def mode(self) -> DisplayMode:
+        return self._mode
+
+    def checkResponse(self, buffer):
+        if len(buffer) < 1:
+            return False
+
+        value = buffer.data()[0]
+        buffer.remove(0, 1)
+        try:
+            self._mode = DisplayMode(value)
+            self._success()
+        except ValueError:
+            self._error(ErrorType.COMMUNICATION_ERROR)
+
+        return True
+
+
+class GetPixelFlipSpeed(Command):
+
+    def __init__(self):
+        super().__init__("GetPixelFlipSpeed", self.bA([0xE1]))
+        self._speed = None
+
+    @property
+    def speed(self) -> int:
+        return self._speed
+
+    def checkResponse(self, buffer):
+        if len(buffer) < 2:
+            return False
+
+        lower = buffer.data()[0]
+        higher = buffer.data()[1]
+        self._speed = ((higher << 8) & 0xFF00) | (lower & 0x00FF)
+        self._success()
+        return True
+
+
+class GetLEDTransitionMode(Command):
+
+    def __init__(self):
+        super().__init__("GetLEDTransitionMode", self.bA([0xE2]))
+        self._mode = None
+
+    @property
+    def mode(self) -> LEDTransitionMode:
+        return self._mode
+
+    def checkResponse(self, buffer):
+        if len(buffer) < 1:
+            return False
+
+        value = buffer.data()[0]
+        buffer.remove(0, 1)
+        try:
+            self._mode = LEDTransitionMode(value)
+            self._success()
+        except ValueError:
+            self._error(ErrorType.COMMUNICATION_ERROR)
+
+        return True
+
+
+class GetPixelTransitionMode(Command):
+
+    def __init__(self):
+        super().__init__("GetPixelTransitionMode", self.bA([0xE3]))
+        self._mode = None
+
+    @property
+    def mode(self) -> PixelTransitionMode:
+        return self._mode
+
+    def checkResponse(self, buffer):
+        if len(buffer) < 1:
+            return False
+
+        value = buffer.data()[0]
+        buffer.remove(0, 1)
+        try:
+            self._mode = PixelTransitionMode(value)
+            self._success()
+        except ValueError:
+            self._error(ErrorType.COMMUNICATION_ERROR)
+
+        return True
 

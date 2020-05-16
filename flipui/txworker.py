@@ -1,152 +1,98 @@
-import threading
-import socket
-import time
-import sys
-from queue import Queue, Empty
+from PySide2.QtCore import QObject, QByteArray
+from PySide2.QtNetwork import QTcpSocket
+from commands import State, Command
+from typing import Iterable
+import util
 
-IP = "flipdot1"
-PORT = 3000
-BUFFER_SIZE = 64
 
-STOP = 0x82
+class FlipdotTxWorker(QObject):
 
-class TxWorker(threading.Thread):
+    def __init__(self, parent):
+        QObject.__init__(self, parent)
+        self._url = 'flipdot1'
+        self._port = 3000
+        self._socket = QTcpSocket(self)
+        self._socket.error.connect(self.__socketError)
+        self._socket.connected.connect(self.__socketConnected)
+        self._socket.disconnected.connect(self.__socketDisconnected)
+        self._socket.readyRead.connect(self.__socketReadyRead)
+        self._socket.bytesWritten.connect(self.__socketBytesWritten)
+        self._cmdList = []
+        self._rxBuffer = QByteArray()
+        self._closeTimer = util.createSingleShotTimer(1600, self.__closeTimerTimeout)
 
-    def __init__(self, led_queue, pixel_queue):
-        super(TxWorker, self).__init__()
-        self.led_queue = led_queue
-        self.pixel_queue = pixel_queue
-        self.sock = None
-        self.connection_open = False
-        self.last_tx = 0
+    def setTarget(self, host: str, port: int):
+        pass
 
-    def get_from_queue(self, queue):
-        items = []
-        while not queue.empty() and len(items) < 10:
-            try:
-                items.append(queue.get(block=False))
-            except Empty:
+    def sendCommands(self, cmds: Iterable[Command]) -> None:
+        for cmd in cmds:
+            self.sendCommand(cmd)
+
+    def sendCommand(self, cmd: Command) -> None:
+        if cmd.state != State.FRESH:
+            raise RuntimeWarning("Unfresh command given, the command has not been queued.")
+            return
+
+        if self._socket.state() == QTcpSocket.UnconnectedState:
+            print("re-establish")
+            self._socket.connectToHost(self._url, self._port)
+            self._cmdList.append(cmd)
+        elif self._socket.state() == QTcpSocket.ConnectedState:
+            cmd.transmit(self._socket)
+            self._cmdList.append(cmd)
+
+    def __socketError(self, socketError):
+        print(socketError)
+
+        if socketError in [QTcpSocket.ConnectionRefusedError, QTcpSocket.HostNotFoundError, QTcpSocket.NetworkError]:
+            for cmd in filter(lambda c: c.state == State.FRESH, self._cmdList):
+                cmd.connectionImpossible()
+                self._cmdList.remove(cmd)
+
+    def _restartTimer(self):
+        if self._closeTimer.isActive():
+            self._closeTimer.stop()
+        self._closeTimer.start()
+
+    def __closeTimerTimeout(self):
+        if self._socket.isOpen():
+            print("closing")
+            self._socket.close()
+
+    def __sendNext(self):
+        toSend = next(filter(lambda cmd: cmd.state == State.FRESH, self._cmdList), None)
+        if toSend:
+            toSend.transmit(self._socket)
+
+    def __socketConnected(self):
+        self._restartTimer()
+        self.__sendNext()
+
+    def __socketBytesWritten(self, n):
+        self._restartTimer()
+
+        f = filter(lambda cmd: cmd.state == State.TX_PENDING, self._cmdList)
+        while cmd := next(f, None):
+            n = cmd.bytesWritten(n)
+            if n == 0:
                 break
-        return items
 
-    def run(self):
-        while True:
+        self.__sendNext()
 
-            items = self.get_from_queue(self.led_queue)
-            ack_counter = 0
+    def __socketDisconnected(self):
+        self._closeTimer.stop()
 
-            if self.connection_open and (time.time() - self.last_tx) > 2.5:
-                self.sock.close()
-                self.connection_open = False
-                print("closed (no more tx)")
+        if next(filter(lambda cmd: cmd.state == State.FRESH, self._cmdList), None):
+            print("re-establish2")
+            self._socket.connectToHost(self._url, self._port)
 
-            if not self.connection_open:
-                time.sleep(0.1)
+    def __socketReadyRead(self):
+        self._restartTimer()
+        self._rxBuffer.append(self._socket.readAll())
 
-            if items:
-                try:
-                    to_send = [0xA0]
-                    for i, rgb in enumerate(items):
-                        to_send.extend([rgb[0], rgb[1], rgb[2], 0x82 if i == len(items)-1 else 0x84])
-
-                    if not self.connection_open:
-                        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        self.sock.settimeout(0.5)
-                        self.sock.connect((IP, PORT))
-                        print("opened")
-                        self.connection_open = True
-
-                    self.sock.send(bytes(to_send))
-                    self.last_tx = time.time()
-
-                    #data = self.sock.recv(len(items)*2)
-                    #for b in data:
-                    #    if b == 0x80:
-                    #        ack_counter += 1
-
-                    #if ack_counter < len(items):
-                    #    data = self.sock.recv(16)
-
-                    #print(str(len(items)) + " led at once")
-                except ConnectionRefusedError:
-                    print("connection refused")
-                except socket.timeout:
-                    print(sys.exc_info()[0])
-                    print("led tx error")
-                    if self.sock and self.connection_open:
-                        self.sock.close()
-                        print("closed (err)")
-                    self.sock = None
-                    self.connection_open = False
-
-            items = self.get_from_queue(self.pixel_queue)
-            ack_counter = 0
-
-            if items:
-                try:
-                    to_send = [0x94]
-
-                    for i, px in enumerate(items):
-                        to_send.extend([0x01 if px[2] else 0x00, px[0], px[1]])
-                    to_send.append(STOP)
-
-                    if not self.connection_open:
-                        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        self.sock.settimeout(0.5)
-                        self.sock.connect((IP, PORT))
-                        print("opened")
-                        self.connection_open = True
-
-                    self.sock.send(bytes(to_send))
-                    self.last_tx = time.time()
-
-                    #data = self.sock.recv(len(items)*2)
-                    #for b in data:
-                    #    if b == 0x80:
-                    #        ack_counter += 1
-
-                    #if ack_counter < len(items):
-                    #    data = self.sock.recv(16)
-
-                    #print(str(len(items)) + " px at once")
-
-                except ConnectionRefusedError:
-                    print("connection refused")
-                except socket.timeout:
-                    print(sys.exc_info()[0])
-                    print("px tx error")
-                    if self.sock and self.connection_open:
-                        self.sock.close()
-                        print("closed (err)")
-                    self.sock = None
-                    self.connection_open = False
-
-
-            # items = self.get_from_queue(self.pixel_queue)
-            # ack_counter = 0
-            #
-            # if items:
-            #     try:
-            #         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            #         self.sock.settimeout(0.5)
-            #         self.sock.connect((IP, PORT))
-            #         self.sock.send(bytes([0x94, 0x01]))
-            #
-            #         for i, px in enumerate(items):
-            #             self.sock.send(bytes([0x01 if px[2] else 0x00, px[0], px[1]]))
-            #
-            #         data = self.sock.recv(len(items)*2)
-            #         for b in data:
-            #             if b == 0x80:
-            #                 ack_counter += 1
-            #
-            #         if ack_counter < len(items):
-            #             data = self.sock.recv(16)
-            #
-            #         self.sock.send(bytes([0xD0]))
-            #         print(str(len(items)) + " px at once")
-            #     except:
-            #         print("px tx error")
-            #     finally:
-            #         self.sock.close()
-
+        for cmd in self._cmdList:
+            if cmd.state == State.RX_PENDING:
+                if not cmd.checkResponse(self._rxBuffer):
+                    break
+                else:
+                    self._cmdList.remove(cmd)
