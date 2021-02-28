@@ -1,6 +1,7 @@
 #ifndef WS2812BUFFER_H
 #define WS2812BUFFER_H
 
+#include <freertos/FreeRTOS.h>
 #include <vector>
 #include "../controllers/ws2812controller.h"
 

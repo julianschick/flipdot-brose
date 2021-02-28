@@ -93,12 +93,12 @@ void FlipdotDisplay::setPixelsPerSecond(uint16_t pixelsPerSecond) {
 }
 
 void FlipdotDisplay::clear() {
-    ESP_LOGD(TAG, "Clear display");
-
     if (displayMode == OVERRIDE) {
+        ESP_LOGD(TAG, "Clear display (OVERRIDE)");
         lock(); state->reset(); unlock();
         displayCurrentState();
     } else {
+        ESP_LOGD(TAG, "Clear display (INCREMENTAL)");
         BitArray blank (*state);
         blank.reset();
         display(blank);
@@ -106,12 +106,12 @@ void FlipdotDisplay::clear() {
 }
 
 void FlipdotDisplay::fill() {
-    ESP_LOGD(TAG, "Fill display");
-
     if (displayMode == OVERRIDE) {
+        ESP_LOGD(TAG, "Fill display (OVERRIDE)");
         state->set();
         displayCurrentState();
     } else {
+        ESP_LOGD(TAG, "Fill display (INCREMENTAL)");
         BitArray filled (*state);
         filled.set();
         display(filled);
@@ -120,9 +120,11 @@ void FlipdotDisplay::fill() {
 
 void FlipdotDisplay::display(const BitArray &new_state) {
     if (state_unknown || displayMode == OVERRIDE) {
+        ESP_LOGD(TAG, "Change display (OVERRIDE)");
         lock(); state->copy_from(new_state); unlock();
         displayCurrentState();
     } else {
+        ESP_LOGD(TAG, "Change display (INCREMENTAL)");
         lock();
         state->transition_vector_to(new_state, *transition_set, *transition_reset);
         state->copy_from(new_state);

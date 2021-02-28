@@ -2,7 +2,6 @@
 #include "libs/blue.h"
 #include "libs/mdns.h"
 #include "libs/wifi.h"
-//#include "libs/http_server.h"
 #include "libs/tcp_server.h"
 
 #define PIN_NUM_MOSI GPIO_NUM_13
@@ -98,15 +97,13 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "Controllers initialized");
 
     Nvs::setup();
-    //ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default()); // needed for mdns
+
+    // general networking pre-setup (main work is done in Wifi::setup())
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
     start_mdns_service();
     Wifi::setup();
     Blue::setup();
-
-    /*HttpServer::set_display(dsp);
-    HttpServer::set_led_driver(led_drv);
-    HttpServer::start();*/
 
     ESP_LOGI(TAG, "Network services up");
 

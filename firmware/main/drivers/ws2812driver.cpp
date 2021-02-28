@@ -4,25 +4,6 @@
 #define TAG "ws2812-driver"
 #include "esp_log.h"
 
-// needed until v4.1 is stable
-#define RMT_DEFAULT_CONFIG_TX(gpio, channel_id)      \
-    {                                                \
-        .rmt_mode = RMT_MODE_TX,                     \
-        .channel = channel_id,                       \
-        .clk_div = 80,                               \
-        .gpio_num = gpio,                            \
-        .mem_block_num = 1,                          \
-        .tx_config = {                               \
-            .loop_en = false,                        \
-            .carrier_freq_hz = 38000,                \
-            .carrier_duty_percent = 33,              \
-            .carrier_level = RMT_CARRIER_LEVEL_HIGH, \
-            .carrier_en = false,                     \
-            .idle_level = RMT_IDLE_LEVEL_LOW,        \
-            .idle_output_en = true,                  \
-        }                                            \
-    }
-
 WS2812Driver::WS2812Driver(gpio_num_t pin, rmt_channel_t rmt_channel, ws2812_timing_config_t& timing_config, size_t led_count)
     : pin(pin), rmt_channel(rmt_channel), timing_config(timing_config), led_count(led_count)
 {
@@ -103,7 +84,10 @@ void WS2812Driver::update() {
     ESP_LOGV(TAG, "update()");
 
     setup_tx_buf();
-    ESP_ERROR_CHECK(rmt_write_items(rmt_channel, tx_buf, led_count * BIT_PER_LED, false));
+    ESP_ERROR_CHECK(rmt_write_items(rmt_channel, tx_buf, led_count/2 * BIT_PER_LED, false));
+    ESP_ERROR_CHECK(rmt_wait_tx_done(rmt_channel, portMAX_DELAY));
+
+    ESP_ERROR_CHECK(rmt_write_items(rmt_channel, tx_buf + (led_count/2 * BIT_PER_LED), led_count/2 * BIT_PER_LED, false));
     ESP_ERROR_CHECK(rmt_wait_tx_done(rmt_channel, portMAX_DELAY));
 
     ESP_LOGV(TAG, "update() done");

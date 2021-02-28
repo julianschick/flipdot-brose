@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <freertos/FreeRTOS.h>
-//#include <freertos/queue.h>
+#include <freertos/queue.h>
 #include <freertos/semphr.h>
 #include "../controllers/flipdotdisplay.h"
 

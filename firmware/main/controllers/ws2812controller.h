@@ -2,6 +2,8 @@
 #define WS2812CONTROLLER_H
 
 #include <vector>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include "../drivers/ws2812driver.h"
 
 class WS2812Controller {
