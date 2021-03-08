@@ -17,8 +17,8 @@
    <widget class="QPushButton" name="clearButton">
     <property name="geometry">
      <rect>
-      <x>100</x>
-      <y>70</y>
+      <x>30</x>
+      <y>30</y>
       <width>80</width>
       <height>23</height>
      </rect>
@@ -30,14 +30,27 @@
    <widget class="QPushButton" name="fillButton">
     <property name="geometry">
      <rect>
-      <x>230</x>
-      <y>70</y>
+      <x>150</x>
+      <y>30</y>
       <width>80</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
      <string>Fill</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>140</y>
+      <width>80</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Test</string>
     </property>
    </widget>
   </widget>
@@ -80,8 +93,8 @@
    <slot>fillButtonClicked()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>267</x>
-     <y>96</y>
+     <x>229</x>
+     <y>72</y>
     </hint>
     <hint type="destinationlabel">
      <x>393</x>
@@ -96,8 +109,8 @@
    <slot>clearButtonClicked()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>149</x>
-     <y>109</y>
+     <x>109</x>
+     <y>72</y>
     </hint>
     <hint type="destinationlabel">
      <x>175</x>
@@ -105,9 +118,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>testButtonClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>130</x>
+     <y>167</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>504</x>
+     <y>380</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>clearButtonClicked()</slot>
   <slot>fillButtonClicked()</slot>
+  <slot>testButtonClicked()</slot>
  </slots>
 </ui>

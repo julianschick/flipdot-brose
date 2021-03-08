@@ -41,7 +41,12 @@ class FlipdotDisplay(QObject):
         self._tx_worker.sendCommand(c)
 
     def set_all_leds(self, color):
-        pass
+        c = cx.SetAllLEDs(color)
+        self._tx_worker.sendCommand(c)
+
+    def show_bitset(self, bitset):
+        c = cx.ShowBitset(bitset)
+        self._tx_worker.sendCommand(c)
 
     def clear(self):
         self._tx_worker.sendCommand(cx.Clear())
@@ -52,8 +57,11 @@ class FlipdotDisplay(QObject):
 
 
     def test(self):
-        c = cx.Fill()
-        c.success.connect(lambda c: print(c))
+        b = bitarray(16*28)
+        b.setall(True)
+        b[7] = True;
+        print(b)
+        c = cx.ShowBitset(b)
         self._tx_worker.sendCommand(c)
 
 

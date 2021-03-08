@@ -234,7 +234,7 @@ class WhoAreYou(Command):
 
 class ShowBitset(Command):
 
-    def __init__(self, bitset : bitarray):
+    def __init__(self, bitset: bitarray):
         super().__init__("ShowBitset", self.bA(bytes([0x90, len(bitset) // 8]) + bitset.tobytes()))
 
     def checkResponse(self, buffer):

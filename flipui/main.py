@@ -9,7 +9,6 @@ from flipdotwidget import FlipdotWidget
 from queue import Queue
 from txworker_old import TxWorker
 import time
-import image2bitarray
 from PIL import Image
 from bitarray import bitarray
 from flipdotdisplay import FlipdotDisplay

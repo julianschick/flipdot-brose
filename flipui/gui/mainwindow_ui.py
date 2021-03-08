@@ -3,16 +3,13 @@
 ################################################################################
 ## Form generated from reading UI file 'mainwindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 5.14.2
+## Created by: Qt User Interface Compiler version 5.15.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide2.QtCore import (QCoreApplication, QDate, QDateTime, QMetaObject,
-    QObject, QPoint, QRect, QSize, QTime, QUrl, Qt)
-from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
-    QFontDatabase, QIcon, QKeySequence, QLinearGradient, QPalette, QPainter,
-    QPixmap, QRadialGradient)
+from PySide2.QtCore import *
+from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 
@@ -29,10 +26,13 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.clearButton = QPushButton(self.centralwidget)
         self.clearButton.setObjectName(u"clearButton")
-        self.clearButton.setGeometry(QRect(100, 70, 80, 23))
+        self.clearButton.setGeometry(QRect(30, 30, 80, 23))
         self.fillButton = QPushButton(self.centralwidget)
         self.fillButton.setObjectName(u"fillButton")
-        self.fillButton.setGeometry(QRect(230, 70, 80, 23))
+        self.fillButton.setGeometry(QRect(150, 30, 80, 23))
+        self.pushButton = QPushButton(self.centralwidget)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setGeometry(QRect(90, 140, 80, 23))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -51,6 +51,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.fillButton.clicked.connect(MainWindow.fillButtonClicked)
         self.clearButton.clicked.connect(MainWindow.clearButtonClicked)
+        self.pushButton.clicked.connect(MainWindow.testButtonClicked)
 
         QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
@@ -61,6 +62,7 @@ class Ui_MainWindow(object):
         self.actionSettings.setText(QCoreApplication.translate("MainWindow", u"Settings...", None))
         self.clearButton.setText(QCoreApplication.translate("MainWindow", u"Clear", None))
         self.fillButton.setText(QCoreApplication.translate("MainWindow", u"Fill", None))
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Test", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
 
