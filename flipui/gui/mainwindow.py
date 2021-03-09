@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
         self._ui.actionExit.triggered.connect(self.__onActionExit)
         self._ui.actionSettings.triggered.connect(self.__onActionSettings)
 
-        self._dsp = FlipdotDisplay(4 * 28, 16, self)
+        self._dsp = FlipdotDisplay(4 * 28, 16, 36, self)
 
     def __onActionExit(self):
         self.close()
@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
 
     def testButtonClicked(self):
         url_params = {
-            "appid": "cfe69f271d5f1cac54c6084dd3bbf8e2",
+            "appid": "",
             "part": "current,minutely,hourly,alerts",
             "units": "metric",
             "lat": "52.48",
