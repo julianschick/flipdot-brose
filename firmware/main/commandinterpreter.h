@@ -21,7 +21,6 @@ private:
         NEUTRAL,
 
         SHOW_BITSET_LEN, SHOW_BITSET_BITS,
-        SHOW_TEXT_LEN_ALIGN, SHOW_TEXT_CHARS,
         SET_PIXEL_NEXT, SET_PIXEL_X, SET_PIXEL_Y,
 
         SET_ALL_LEDS, SET_ALL_LEDS_NEXT,
@@ -51,17 +50,6 @@ private:
     const uint8_t  ADDR_INVALID = 0x86;
     const uint8_t BUFFER_OVERFLOW = 0x87;
 
-
-    inline bool toAlignment(uint8_t byte, PixelString::TextAlignment* alignment) {
-        uint8_t code = byte & 0x03;
-
-        if (code < PixelString::TextAlignment_Last) {
-            *alignment = (PixelString::TextAlignment) code;
-            return true;
-        }
-
-        return false;
-    }
 
     // state machine flow
     void revertCursor();

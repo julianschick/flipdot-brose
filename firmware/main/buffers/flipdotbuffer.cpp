@@ -38,12 +38,6 @@ bool FlipdotBuffer::fill() {
     return xQueueSend(queue, &msg, 0) == pdTRUE;
 }
 
-bool FlipdotBuffer::showText(std::string text, PixelString::TextAlignment alignment) {
-    ShowTextCommand* cmd = new ShowTextCommand(text, alignment);
-    FlipdotCommandMsg msg = {SHOW_TEXT, cmd};
-    return xQueueSend(queue, &msg, 0) == pdTRUE;
-}
-
 bool FlipdotBuffer::setPixel(int x, int y, bool visible) {
     SetPixelCommand* cmd = new SetPixelCommand(x, y, visible);
     FlipdotCommandMsg msg = { SET_PIXELS, cmd};
@@ -127,12 +121,6 @@ void FlipdotBuffer::executeCommand(FlipdotBuffer::FlipdotCommandMsg &msg) {
         case FILL:
             ctrl->fill();
             break;
-
-        case SHOW_TEXT: {
-            ShowTextCommand *cmd = (ShowTextCommand *) msg.data;
-            ctrl->display_string(cmd->text, cmd->alignment);
-            delete cmd;
-        }   break;
 
         case SET_PIXELS: {
             SetPixelCommand *cmd = (SetPixelCommand *) msg.data;

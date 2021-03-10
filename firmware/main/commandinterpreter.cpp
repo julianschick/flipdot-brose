@@ -87,11 +87,6 @@ bool CommandInterpreter::process() {
                 respond(success ? ACK : BUFFER_OVERFLOW);
                 buf.removeLeading(1);
 
-            // show text message
-            } else if (b == 0x93) {
-                state = SHOW_TEXT_LEN_ALIGN;
-                cursor++;
-
             // set pixel
             } else if (b == 0x94) {
                 state = SET_PIXEL_NEXT;
@@ -210,31 +205,6 @@ bool CommandInterpreter::process() {
                 bool success = flipdotBuffer->showBitset(bitset);
 
                 revertCursor(success ? ACK : BUFFER_OVERFLOW);
-            }
-            break;
-
-        NEXT_STATE(SHOW_TEXT_LEN_ALIGN, SHOW_TEXT_CHARS)
-
-        case SHOW_TEXT_CHARS:
-            len = (buf[1] & 0xFC) >> 2;
-
-            if (cursor - 1 < len) {
-                cursor++;
-            } else {
-                PixelString::TextAlignment alignment;
-                if (!toAlignment(buf[1], &alignment)) {
-                    revertCursor(ADDR_INVALID);
-                } else {
-                    uint8_t receivedBytes[len];
-                    for (size_t i = 0; i < len; i++) {
-                        receivedBytes[i] = buf[i + 2];
-                    }
-
-                    std::string str = std::string((char *) &receivedBytes[0], len);
-                    ESP_LOGI(TAG, "string  of len %d received = %s", len, str.c_str());
-                    bool success = flipdotBuffer->showText(str, alignment);
-                    revertCursor(success ? ACK : BUFFER_OVERFLOW);
-                }
             }
             break;
 

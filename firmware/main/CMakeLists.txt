@@ -15,7 +15,6 @@ idf_component_register(
         "libs/blue.cpp"
         "util/bitarray.cpp"
         "util/pixelmap.cpp"
-        "util/pixelstring.cpp"
     INCLUDE_DIRS
         ""
 )

@@ -6,7 +6,6 @@
 #include <freertos/semphr.h>
 #include "../util/bitarray.h"
 #include "../util/pixelmap.h"
-#include "../util/pixelstring.h"
 #include "../drivers/flipdotdriver.h"
 
 #define LEFT_TO_RIGHT_COORD(c) c.x = i / h; c.y = i % h
@@ -49,7 +48,6 @@ public:
     void fill();
 
     void display(const BitArray& new_state);
-    void display_string(std::string s, PixelString::TextAlignment alignment = PixelString::LEFT);
     void flip_single_pixel(int x, int y, bool show);
 
     size_t copy_state(uint8_t* buffer, size_t len);

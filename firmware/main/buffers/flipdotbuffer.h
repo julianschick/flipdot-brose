@@ -14,7 +14,6 @@ private:
         SHOW_BITSET,
         CLEAR,
         FILL,
-        SHOW_TEXT,
         SET_PIXELS,
         SET_DISPLAY_MODE,
         SET_FLIP_SPEED,
@@ -24,13 +23,6 @@ private:
     struct FlipdotCommandMsg {
         FlipdotCommand cmd;
         void* data;
-    };
-
-    struct ShowTextCommand {
-        std::string text;
-        PixelString::TextAlignment alignment;
-
-        ShowTextCommand(const string &text, PixelString::TextAlignment alignment) : text(text), alignment(alignment) { };
     };
 
     struct SetPixelCommand {
@@ -48,7 +40,6 @@ public:
     bool showBitset(BitArray* bitset);
     bool clear();
     bool fill();
-    bool showText(std::string text, PixelString::TextAlignment alignment);
     bool setPixel(int x, int y, bool visible);
     bool setDisplayMode(FlipdotDisplay::DisplayMode displayMode);
     bool setFlipSpeed(uint16_t pixelsPerSecond);

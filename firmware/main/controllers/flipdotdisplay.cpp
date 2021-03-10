@@ -4,11 +4,9 @@
 #include <algorithm>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "../font/octafont-regular.h"
-#include "../font/octafont-bold.h"
 
 #define TAG "flip-controller"
-#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include <esp_log.h>
 
 // Show ASCII image of display
@@ -173,16 +171,6 @@ void FlipdotDisplay::display(const BitArray &new_state) {
 
 }
 
-void FlipdotDisplay::display_string(std::string s, PixelString::TextAlignment alignment) {
-    BitArray new_state (n);
-    OctafontRegular font_regular;
-    OctafontBold font_bold;
-
-    PixelString pixel_string(s);
-    pixel_string.print(new_state, *cmap, dynamic_cast<PixelFont&>(font_regular),dynamic_cast<PixelFont&>(font_bold), alignment);
-    display(new_state);
-}
-
 void FlipdotDisplay::flip_single_pixel(int x, int y, bool show) {
     if (!state_unknown && displayMode == INCREMENTAL && state->get(cmap->index(x, y)) == show) {
         return;
@@ -231,7 +219,7 @@ bool FlipdotDisplay::is_valid_index(int x, int y) {
 }
 
 void FlipdotDisplay::reshuffleRandomTrxMap() {
-    random_shuffle(randomTransitionMap, randomTransitionMap + n);
+    std::random_shuffle(randomTransitionMap, randomTransitionMap + n);
 }
 
 void FlipdotDisplay::wait() {
