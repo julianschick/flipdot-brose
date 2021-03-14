@@ -1,7 +1,7 @@
-from PySide2.QtCore import QObject, QByteArray
+from PySide2.QtCore import QObject, QByteArray, QTimer
 from PySide2.QtNetwork import QTcpSocket
-from commands import State, Command
-from typing import Iterable
+from qutils.qcommand import State, QCommand
+from typing import Iterable, List
 import util
 
 
@@ -9,37 +9,40 @@ class FlipdotTxWorker(QObject):
 
     def __init__(self, parent):
         QObject.__init__(self, parent)
-        self._url = 'flipdot42'
-        self._port = 3000
+        self._url: str = 'flipdot42'
+        self._port: int = 3000
         self._socket = QTcpSocket(self)
         self._socket.error.connect(self.__socketError)
         self._socket.connected.connect(self.__socketConnected)
         self._socket.disconnected.connect(self.__socketDisconnected)
         self._socket.readyRead.connect(self.__socketReadyRead)
         self._socket.bytesWritten.connect(self.__socketBytesWritten)
-        self._cmdList = []
-        self._rxBuffer = QByteArray()
-        self._closeTimer = util.createSingleShotTimer(1600, self.__closeTimerTimeout)
+        self._cmdList: List[QCommand] = []
+        self._rxBuffer: bytearray = bytearray()
+        self._closeTimer: QTimer = util.createSingleShotTimer(1600, self.__closeTimerTimeout)
 
     def setTarget(self, host: str, port: int):
         pass
 
-    def sendCommands(self, cmds: Iterable[Command]) -> None:
+    def sendCommands(self, cmds: Iterable[QCommand]) -> None:
         for cmd in cmds:
             self.sendCommand(cmd)
 
-    def sendCommand(self, cmd: Command) -> None:
+    def sendCommand(self, cmd: QCommand) -> None:
         if cmd.state != State.FRESH:
             raise RuntimeWarning("Unfresh command given, the command has not been queued.")
             return
 
         if self._socket.state() == QTcpSocket.UnconnectedState:
             print("re-establish")
+            self._rxBuffer.clear()
             self._socket.connectToHost(self._url, self._port)
             self._cmdList.append(cmd)
-        elif self._socket.state() == QTcpSocket.ConnectedState:
-            cmd.transmit(self._socket)
+        elif self._socket.state() == QTcpSocket.HostLookupState:
             self._cmdList.append(cmd)
+        elif self._socket.state() == QTcpSocket.ConnectedState:
+            self._cmdList.append(cmd)
+            self.__sendNext()
 
     def __socketError(self, socketError):
         print(socketError)
@@ -58,6 +61,7 @@ class FlipdotTxWorker(QObject):
         if self._socket.isOpen():
             print("closing")
             self._socket.close()
+        self._rxBuffer.clear()
 
     def __sendNext(self):
         toSend = next(filter(lambda cmd: cmd.state == State.FRESH, self._cmdList), None)
@@ -88,11 +92,14 @@ class FlipdotTxWorker(QObject):
 
     def __socketReadyRead(self):
         self._restartTimer()
-        self._rxBuffer.append(self._socket.readAll())
+        self._rxBuffer += bytearray(self._socket.readAll())
 
-        for cmd in self._cmdList:
+        copied = self._cmdList.copy()
+        for cmd in copied:
             if cmd.state == State.RX_PENDING:
-                if not cmd.checkResponse(self._rxBuffer):
-                    break
-                else:
+                r = cmd.check_response(self._rxBuffer)
+                if r.ok:
                     self._cmdList.remove(cmd)
+                else:
+                    break
+

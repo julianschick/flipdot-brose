@@ -1,14 +1,12 @@
-from PySide2.QtWidgets import QMainWindow, QStatusBar, QMenuBar, QAction
+from PIL import Image
+from PySide2.QtWidgets import QMainWindow
 
+from gfx.bitarray_utils import img_to_bitarray
+from gfx.pixelfont import PixelFont, PixelFontVariant
 from gfx.rect import Rect
 from gui.mainwindow_ui import Ui_MainWindow
 from gui.settingsdialog import SettingsDialog
-from flipdotdisplay import FlipdotDisplay
-from PIL import Image, ImageDraw
-from gfx.pixelfont import PixelFont, PixelFontVariant, TextAlignment
-from gfx.bitarray_utils import img_to_bitarray
-import requests
-from datetime import datetime, time, timedelta
+from qutils.flipdotdisplay import FlipdotDisplay
 
 
 class MainWindow(QMainWindow):
@@ -38,13 +36,16 @@ class MainWindow(QMainWindow):
         self._dsp.fill()
 
     def testButtonClicked(self):
-        f: 'PixelFont' = PixelFont('resources/octafont.png', {PixelFontVariant.NORMAL: 9, PixelFontVariant.BOLD: 0})
-        img: Image = Image.new('RGB', (28 * 4, 16), (255, 255, 255))
+        # f: 'PixelFont' = PixelFont('resources/octafont.png', {PixelFontVariant.NORMAL: 9, PixelFontVariant.BOLD: 0})
+        # img: Image = Image.new('RGB', (28 * 4, 16), (255, 255, 255))
+        #
+        # " 🡠 🡢 🡡 🡣 🡤 🡥 🡦 🡧  🡥🡢🡦🡣🡧🡠🡤💧"
+        # f.draw("🡡🡥🡢🡦🡣🡧🡠🡤\nFAT DROP 💧", img, Rect(0, 0, 1000, 16), variant=PixelFontVariant.NORMAL)
+        #
+        # bits = img_to_bitarray(img)
+        # self._dsp.show_bitset(bits)
 
-        " 🡠 🡢 🡡 🡣 🡤 🡥 🡦 🡧  🡥🡢🡦🡣🡧🡠🡤💧"
-        f.draw("🡡🡥🡢🡦🡣🡧🡠🡤\nFAT DROP 💧", img, Rect(0, 0, 1000, 16), variant=PixelFontVariant.NORMAL)
+        self._dsp.test()
 
-        bits = img_to_bitarray(img)
-        self._dsp.show_bitset(bits)
 
 

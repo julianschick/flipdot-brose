@@ -3,15 +3,12 @@ from PySide2 import QtCore, QtGui
 from PySide2.QtCore import QCoreApplication
 import socket
 from functools import partial
-import requests
 import concurrent.futures
 from flipdotwidget import FlipdotWidget
 from queue import Queue
 from txworker_old import TxWorker
-import time
 from PIL import Image
 from bitarray import bitarray
-from flipdotdisplay import FlipdotDisplay
 from gui.mainwindow import MainWindow
 
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)

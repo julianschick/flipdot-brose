@@ -1,7 +1,7 @@
 from PySide2.QtCore import QObject
 import commands as cx
-from txworker import FlipdotTxWorker
-from bitarray import bitarray
+from qutils.txworker import FlipdotTxWorker
+from qutils.qcommand import QCommand
 
 
 class FlipdotDisplay(QObject):
@@ -42,28 +42,34 @@ class FlipdotDisplay(QObject):
 
     def set_all_leds(self, color):
         c = cx.SetAllLEDs(color)
-        self._tx_worker.sendCommand(c)
+        self._tx_worker.sendCommand(QCommand(c, parent=self))
 
     def show_bitset(self, bitset):
         c = cx.ShowBitset(bitset)
-        self._tx_worker.sendCommand(c)
+        self._tx_worker.sendCommand(QCommand(c, parent=self))
 
     def clear(self):
-        self._tx_worker.sendCommand(cx.Clear())
+        self._tx_worker.sendCommand(QCommand(cx.Clear(), parent=self))
 
     def fill(self):
-        self._tx_worker.sendCommand(cx.Fill())
-
-
+        self._tx_worker.sendCommand(QCommand(cx.Fill(), parent=self))
 
     def test(self):
-        b = bitarray(16*28)
-        b.setall(True)
-        b[7] = True;
-        print(b)
-        c = cx.ShowBitset(b)
-        self._tx_worker.sendCommand(c)
+        #c = cx.SetLEDs([(1,0,255,0),(2,0,0,255)])
+        #c = cx.SetAllLEDs((255,0,0))
+        #c = cx.SetPixelFlipSpeed(500);
+        #c = cx.SetIncrementalMode(cx.DisplayMode.INCREMENTAL)
+        #c = cx.SetPixelTransitionMode(cx.PixelTransitionMode.RANDOM)
 
+        commands = [
+            cx.GetLEDTransitionMode(),
+            cx.GetPixelTransitionMode(),
+            cx.GetPixelFlipSpeed(),
+            cx.GetIncrementalMode()
+        ]
+
+        for c in commands:
+            self._tx_worker.sendCommand(QCommand(c, parent=self))
 
     # callbacks
     def callbackGetAllLEDs(self):

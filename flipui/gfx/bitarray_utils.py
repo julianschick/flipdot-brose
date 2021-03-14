@@ -22,3 +22,13 @@ def bitarray_to_img(bits: bitarray, width: int, height: int, bg_color=(255, 255,
             img.putpixel((i // img.height, i % img.height), fg_color)
 
     return img
+
+
+def dump_to_console(bits: bitarray, width: int, height: int):
+
+    for y in range(height):
+        line = ""
+        for x in range(width):
+            bit = bits[x * height + y] if x * height + y < len(bits) else False
+            line += "⬛" if bit else "  "
+        print(line)
