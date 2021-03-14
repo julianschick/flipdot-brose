@@ -34,12 +34,6 @@ class State(Enum):
     ERRONEOUS = 5
 
 
-class TextAlignment(Enum):
-    LEFT = 0
-    CENTERED = 1
-    RIGHT = 2
-
-
 class DisplayMode(Enum):
     OVERRIDE = 0
     INCREMENTAL = 1
@@ -258,22 +252,6 @@ class Fill(Command):
 
     def checkResponse(self, buffer):
         print(buffer)
-        return self._checkSingleByteResponse(buffer)
-
-
-class ShowTextMessage(Command):
-
-    def __init__(self, text: str, alignment: TextAlignment):
-        if len(str) > 63:
-            shortened = str[:63]
-        else:
-            shortened = str
-
-        payload = [0x93, (len(shortened) << 2) | alignment]
-        payload.extend(shortened.encode('iso8859_15'))
-        super().__init__("ShowTextMessage", self.bA(payload))
-
-    def checkResponse(self, buffer):
         return self._checkSingleByteResponse(buffer)
 
 

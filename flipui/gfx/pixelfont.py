@@ -1,6 +1,5 @@
 from PIL import Image
 from typing import List, Tuple, Optional, Dict
-import numpy as np
 from enum import Enum
 from gfx.rect import Rect
 
@@ -50,6 +49,17 @@ class LineMetrics:
 
 class PixelFont:
 
+    __codepage = {
+        'Ä': 94, 'Ö': 95, 'Ü': 96,
+        'ä': 97, 'ö': 98, 'ß': 99, 'ü': 100,
+        '€': 101,
+        '°': 102,
+        '🡡': 103, '🡥': 104, '🡢': 105, '🡦': 106, '🡣': 107, '🡧': 108, '🡠': 109, '🡤': 110,
+        '💧': 111
+    }
+    for i in range (33, 127):
+        __codepage[chr(i)] = i - 33
+
     def __init__(self, file_path: str, variants: Dict['PixelFontVariant', int]):
         img = Image.open(file_path)
 
@@ -60,7 +70,7 @@ class PixelFont:
             variants[PixelFontVariant.NORMAL] = variants.values()[0]
 
         state_in_char: bool = False
-        char_data: List[np.array[bool]] = []
+        char_data: List[List[bool]] = []
         self._characters: Dict['PixelFontVariant', List['PixelCharacter']] = {}
         self._space_width = 3
         self._character_spacing = 1
@@ -102,38 +112,21 @@ class PixelFont:
             self._characters[variant] = chars
 
     @staticmethod
-    def _extract_8pix_column(img: Image, x: int, y_start: int) -> np.array:
-        col_data = np.zeros(8)
+    def _extract_8pix_column(img: Image, x: int, y_start: int) -> List[bool]:
+        col_data = [False for _ in range(8)]
         for y in range(y_start, y_start + 8):
             col_data[y - y_start] = True if img.getpixel((x, y)) != (255, 255, 255) else False
         return col_data
 
-    # ISO-8859-15
     @staticmethod
-    def _get_char_index(v: int) -> Optional[int]:
-        # Special supported characters from upper block
-        if v == 0xc4: return 94     # Ä
-        if v == 0xd6: return 95     # Ö
-        if v == 0xdc: return 96     # Ü
-        if v == 0xe4: return 97     # ä
-        if v == 0xf6: return 98     # ö
-        if v == 0xdf: return 99     # ß
-        if v == 0xfc: return 100    # ü
-        if v == 0xa4: return 101    # €
-        if v == 0xb0: return 102    # °
-
-        # ASCII block (non control chars up to 127)
-        if 33 <= v <= 126:
-            return v - 33
-
-        # No mapping
-        return None
+    def _get_char_index(unicode_char: str) -> Optional[int]:
+        return PixelFont.__codepage.get(unicode_char[0])
 
     @property
     def height(self):
         return self._height
 
-    def get_character(self, c: int, variant: 'PixelFontVariant') -> Optional['PixelCharacter']:
+    def get_character(self, c: str, variant: 'PixelFontVariant') -> Optional['PixelCharacter']:
         if not self._characters[variant]:
             return None
 
@@ -146,15 +139,14 @@ class PixelFont:
                  base_variant: 'PixelFontVariant' = V.NORMAL,
                  break_width: Optional[int] = None) -> List['LineMetrics']:
 
-        message_bytes = message.encode('ISO-8859-15', errors='strict')
         effective_variant_map = \
-            [variant_map[i] if i < len(variant_map) else base_variant for i in range(len(message_bytes))]
+            [variant_map[i] if i < len(variant_map) else base_variant for i in range(len(message))]
 
         chars = []
-        for (char, variant) in zip(message_bytes, effective_variant_map):
-            if char == 0x20 or char == 0x09:
+        for (char, variant) in zip(message, effective_variant_map):
+            if char in (" ", "\t"):
                 chars.append(SpecialChar.SPACE)
-            elif char == 0x0A or char == 0x0D:
+            elif char in ("\r", "\n"):
                 chars.append(SpecialChar.LINEBREAK)
             else:
                 chars.append(self.get_character(char, variant))
@@ -252,7 +244,7 @@ class PixelFont:
 
 
 class PixelCharacter:
-    def __init__(self, pixels: List[np.array], auto_undercut: bool = True):
+    def __init__(self, pixels: List[List[bool]], auto_undercut: bool = True):
         self._pixels = pixels
         self._auto_undercut = auto_undercut
 
