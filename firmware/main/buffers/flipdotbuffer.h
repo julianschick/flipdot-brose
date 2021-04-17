@@ -15,6 +15,7 @@ private:
         CLEAR,
         FILL,
         SET_PIXELS,
+        SCROLL,
         SET_DISPLAY_MODE,
         SET_FLIP_SPEED,
         SET_TRX_MODE
@@ -41,11 +42,14 @@ public:
     bool clear();
     bool fill();
     bool setPixel(int x, int y, bool visible);
+    bool scroll(std::vector<uint16_t>* dataAndMask);
     bool setDisplayMode(FlipdotDisplay::DisplayMode displayMode);
     bool setFlipSpeed(uint16_t pixelsPerSecond);
     bool setTransitionMode(FlipdotDisplay::TransitionMode trxMode);
 
     size_t getBitset(uint8_t* buffer, size_t len);
+    int getDisplayHeight() { return ctrl->get_height(); };
+    int getDisplayWidth() { return ctrl->get_width(); };
     int getNumberOfPixels() { return ctrl->get_number_of_pixels(); };
     bool isPixelValid(int x, int y) { return ctrl->is_valid_index(x, y); };
     bool isStateKnown();

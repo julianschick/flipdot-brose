@@ -14,6 +14,7 @@ public:
 
     bool operator[](size_t index) const;
     bool get(size_t index) const;
+    uint8_t get8(size_t index) const;
 
     bool all();
     bool none();

@@ -22,6 +22,7 @@ private:
 
         SHOW_BITSET_LEN, SHOW_BITSET_BITS,
         SET_PIXEL_NEXT, SET_PIXEL_X, SET_PIXEL_Y,
+        SCROLL,
 
         SET_ALL_LEDS, SET_ALL_LEDS_NEXT,
         SET_LED_NEXT, SET_LED_RGB,
@@ -46,8 +47,8 @@ private:
     const uint8_t STOP = 0x82;
     const uint8_t INVALID_COMMAND = 0x83;
     const uint8_t CONTINUE = 0x84;
-    const uint8_t  STATE_UNKNOWN = 0x85;
-    const uint8_t  ADDR_INVALID = 0x86;
+    const uint8_t STATE_UNKNOWN = 0x85;
+    const uint8_t ADDR_INVALID = 0x86;
     const uint8_t BUFFER_OVERFLOW = 0x87;
 
 

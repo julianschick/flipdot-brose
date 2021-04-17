@@ -2,6 +2,7 @@
 #define FLIPDOTDISPLAY_H
 
 #include <string>
+#include <vector>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include "../util/bitarray.h"
@@ -49,6 +50,7 @@ public:
 
     void display(const BitArray& new_state);
     void flip_single_pixel(int x, int y, bool show);
+    void scroll(std::vector<uint16_t>* dataAndMask);
 
     size_t copy_state(uint8_t* buffer, size_t len);
     bool get_pixel(int x, int y);

@@ -1,5 +1,6 @@
 #include "tcp_server.h"
 
+#include "../names.h"
 #include <string.h>
 #include <lwip/err.h>
 #include <lwip/sockets.h>
@@ -9,10 +10,6 @@
 #include <esp_log.h>
 
 #include "../commandinterpreter.h"
-
-#define TCP_IPV4
-#define TCP_PORT 3000
-#define TCP_RECV_TIMEOUT_SEC 4
 
 CommandInterpreter* cmx = new CommandInterpreter(512, &send_response, &close_tcp_connection);
 int listen_sock = 0;

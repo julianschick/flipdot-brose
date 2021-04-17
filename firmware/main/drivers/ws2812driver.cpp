@@ -1,7 +1,7 @@
 #include "ws2812driver.h"
 
-#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #define TAG "ws2812-driver"
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include "esp_log.h"
 
 WS2812Driver::WS2812Driver(gpio_num_t pin, rmt_channel_t rmt_channel, ws2812_timing_config_t& timing_config, size_t led_count)

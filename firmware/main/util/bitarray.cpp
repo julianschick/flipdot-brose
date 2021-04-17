@@ -40,6 +40,31 @@ bool BitArray::get(size_t index) const {
     return data_ptr_32[index / 32] & (1 << (index % 32));
 }
 
+uint8_t BitArray::get8(size_t index) const {
+    if (!range_check(index) || !range_check(index + 7)) {
+        return 0;
+    }
+
+    if (index % 8 == 0) {
+        return data_ptr_8[index / 8];
+    } else {
+        int shift = index % 8;
+        size_t block = index / 8;
+
+        uint8_t lower_mask = 0xFF << shift;
+        uint8_t higher_mask = 0xFF >> (8 - shift);
+
+        uint8_t lower_value = data_ptr_8[block] & lower_mask;
+        uint8_t higher_value = data_ptr_8[block+1] & higher_mask;
+
+        uint8_t value = 0;
+        value = value | (lower_value >> shift);
+        value = value | (higher_value << (8 - shift));
+
+        return value;
+    }
+}
+
 bool BitArray::all() {
     bool result = true;
 
@@ -146,7 +171,6 @@ void BitArray::set8(size_t index, uint8_t value) {
         data_ptr_8[block+1] = data_ptr_8[block+1] | ((value >> (8 - shift)) & higher_mask);
         data_ptr_8[block+1] = data_ptr_8[block+1] & ((value >> (8 - shift)) | ~higher_mask);
     }
-
 }
 
 void BitArray::copy_from(const BitArray& other) {

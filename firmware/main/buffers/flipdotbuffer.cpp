@@ -44,6 +44,11 @@ bool FlipdotBuffer::setPixel(int x, int y, bool visible) {
     return xQueueSend(queue, &msg, 0) == pdTRUE;
 }
 
+bool FlipdotBuffer::scroll(std::vector<uint16_t>* dataAndMask) {
+    FlipdotCommandMsg msg = { SCROLL, dataAndMask };
+    return xQueueSend(queue, &msg, 0) == pdTRUE;
+}
+
 bool FlipdotBuffer::setDisplayMode(FlipdotDisplay::DisplayMode displayMode) {
     FlipdotCommandMsg msg;
     PREPARE_MSG_VAL(msg, SET_DISPLAY_MODE, FlipdotDisplay::DisplayMode, displayMode)
@@ -126,6 +131,12 @@ void FlipdotBuffer::executeCommand(FlipdotBuffer::FlipdotCommandMsg &msg) {
             SetPixelCommand *cmd = (SetPixelCommand *) msg.data;
             ctrl->flip_single_pixel(cmd->x, cmd->y, cmd->visible);
             delete cmd;
+        }   break;
+
+        case SCROLL: {
+            std::vector<uint16_t>* dataAndMask = (std::vector<uint16_t>*) msg.data;
+            ctrl->scroll(dataAndMask);
+            delete dataAndMask;
         }   break;
 
         case SET_DISPLAY_MODE: {

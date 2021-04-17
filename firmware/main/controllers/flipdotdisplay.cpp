@@ -181,6 +181,68 @@ void FlipdotDisplay::flip_single_pixel(int x, int y, bool show) {
     lock(); state->set(cmap->index(x, y), show); unlock();
 }
 
+void FlipdotDisplay::scroll(std::vector<uint16_t>* dataAndMask) {
+
+    BitArray new_state = BitArray(n);
+
+    if (h % 8 == 0) {
+        int bytes_per_col = h / 8;
+
+        for (int x = 0; x < w; x++) {
+            for(int y_byte = 0; y_byte < bytes_per_col && y_byte < dataAndMask->size(); y_byte++) {
+
+                size_t index = cmap->index(x, y_byte * 8);
+                uint8_t old_data = state->get8(index);
+                uint8_t shift_mask = (dataAndMask->at(y_byte) & 0xFF00) >> 8;
+                uint8_t shift_data = 0;
+
+                if (x < w - 1) {
+                    shift_data = state->get8(cmap->index(x+1, y_byte*8));
+                } else {
+                    shift_data = dataAndMask->at(y_byte) & 0x00FF;
+                }
+
+                uint8_t new_data = (old_data & ~shift_mask) | (shift_data & shift_mask);
+
+                ESP_LOGD(TAG, "(%d, %d) old_data =   %02x", x, y_byte, old_data);
+                ESP_LOGD(TAG, "(%d, %d) shift_mask = %02x", x, y_byte, shift_mask);
+                ESP_LOGD(TAG, "(%d, %d) shift_data = %02x", x, y_byte, shift_data);
+                ESP_LOGD(TAG, "(%d, %d) new_data =   %02x", x, y_byte, new_data);
+
+                new_state.set8(index, new_data);
+            }
+        }
+
+    } else {
+
+        bool row_shifted[h];
+        bool new_bit[h];
+
+        for (int y = 0; y < h && y / 8 < dataAndMask->size(); y++) {
+            row_shifted[y] = ((dataAndMask->at(y / 8) >> (8 + (y % 8))) & 0x0001) > 0;
+            new_bit[y] = ((dataAndMask->at(y / 8) >> (y % 8)) & 0x0001) > 0;
+
+            ESP_LOGD(TAG, "row_shifted[%d] = %d", y, row_shifted[y]);
+            ESP_LOGD(TAG, "new_bit[%d] = %d", y, new_bit[y]);
+        }
+
+        for (int y = 0; y < h; y++) {
+            if (row_shifted[y]) {
+                for (int x = 0; x < w - 1; x++) {
+                    new_state.set(cmap->index(x, y), state->get(cmap->index(x + 1, y)));
+                }
+                new_state.set(cmap->index(w - 1, y), new_bit[y]);
+            } else {
+                for (int x = 0; x < w; x++) {
+                    new_state.set(cmap->index(x, y), state->get(cmap->index(x, y)));
+                }
+            }
+        }
+    }
+
+    display(new_state);
+}
+
 size_t FlipdotDisplay::copy_state(uint8_t* buffer, size_t len) {
     return state->copy_to(buffer, len);
 }

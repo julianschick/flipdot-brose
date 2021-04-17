@@ -92,6 +92,11 @@ bool CommandInterpreter::process() {
                 state = SET_PIXEL_NEXT;
                 buf.removeLeading(1);
 
+            // scroll
+            } else if (b == 0x95) {
+                state = SCROLL;
+                buf.removeLeading(1);
+
             // set all leds
             } else if (b == 0xA0) {
                 state = SET_ALL_LEDS;
@@ -241,6 +246,27 @@ bool CommandInterpreter::process() {
             state = SET_PIXEL_NEXT;
         }   break;
 
+        case SCROLL: {
+            int expected_len = (flipdotBuffer->getDisplayHeight() / 8) + (flipdotBuffer->getDisplayHeight() % 8 > 0 ? 1 : 0);
+
+            if (cursor < expected_len*2 - 1) {
+                cursor++;
+            } else {
+
+                std::vector<uint16_t>* dataAndMaskList = new std::vector<uint16_t>();
+                for (int i = 0; i < expected_len; i++) {
+                    uint16_t mask = buf[i + expected_len];
+                    uint8_t data = buf[i];
+                    uint16_t dataAndMask = mask << 8 | data;
+                    dataAndMaskList->push_back(dataAndMask);
+                }
+
+                bool success = flipdotBuffer->scroll(dataAndMaskList);
+                revertCursor(success ? ACK : BUFFER_OVERFLOW);
+            }
+
+        }   break;
+
         case SET_ALL_LEDS:
             if (cursor < 2) {
                 cursor++;
@@ -279,7 +305,7 @@ bool CommandInterpreter::process() {
                 if (cursor > 0) {
                     size_t n = cursor / 4;
                     std::vector<WS2812Controller::LedChangeCommand>* cmds =
-                            new std::vector<WS2812Controller::LedChangeCommand>(n);
+                            new std::vector<WS2812Controller::LedChangeCommand>();
 
                     uint8_t response[n];
                     for (size_t i = 0; i < n; i++) {
@@ -432,23 +458,19 @@ void CommandInterpreter::reset() {
 }
 
 void CommandInterpreter::revertCursor() {
-    revertCursor(0x00);
+    buf.removeLeading(cursor + 1);
+    cursor = 0;
+    state = NEUTRAL;
 }
 
 void CommandInterpreter::revertCursor(uint8_t response) {
     buf.removeLeading(cursor + 1);
     cursor = 0;
     state = NEUTRAL;
-    if (response != 0x00) {
-        respond(&response, 1);
-    }
+    respond(&response, 1);
 }
 
 void CommandInterpreter::respond(const uint8_t* data, size_t len) {
-    /*for (int i = 0; i < len; i++) {
-        printf("%#04x ", data[i]);
-    }
-    printf("\n");*/
     if (responseHandler != nullptr) {
         responseHandler(data, len);
     }
