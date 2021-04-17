@@ -55,7 +55,7 @@ class PixelFont:
         '€': 101,
         '°': 102,
         '🡡': 103, '🡥': 104, '🡢': 105, '🡦': 106, '🡣': 107, '🡧': 108, '🡠': 109, '🡤': 110,
-        '💧': 111
+        '💧': 111, '❄': 112, '👁': 113
     }
     for i in range (33, 127):
         __codepage[chr(i)] = i - 33
@@ -227,7 +227,7 @@ class PixelFont:
         if not color >= (0, 0, 0) or not color <= (255, 255, 255):
             raise RuntimeError("Invalid color value")
 
-        for line in self._metrics(message, variant_map=variant_map, base_variant=variant, break_width=box.x if wrap_text else None):
+        for line in self._metrics(message, variant_map=variant_map, base_variant=variant, break_width=box.width if wrap_text else None):
             for metrics in line.chars:
                 x_shift_alignment = 0
                 if text_alignment == TextAlignment.RIGHT:
