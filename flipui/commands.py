@@ -1,4 +1,6 @@
 from enum import Enum
+from math import ceil
+
 from bitarray import bitarray
 from typing import Tuple, List, Optional
 
@@ -78,6 +80,10 @@ class CommandResult:
     @property
     def result_data(self):
         return self._result_data
+
+    @property
+    def is_response_too_short(self):
+        return not self.ok and self.error == ErrorType.SHORT_RESPONSE
 
 
 class Command:
@@ -198,6 +204,45 @@ class SetPixels(Command):
         return self._check_multi_byte_response(buffer, self._numberOfPixels)
 
 
+class Scroll(Command):
+
+    def __init__(self, pixels: List[Optional[bool]], display_height: int):
+        payload = [0x95]
+
+        data_bits = bitarray(endian='little')
+        mask_bits = bitarray(endian='little')
+
+        if len(pixels) > display_height:
+            truncated_pixels = pixels[0:display_height]
+        else:
+            truncated_pixels = pixels
+
+        for pixel in truncated_pixels:
+            if pixel is None:
+                mask_bits.append(False)
+                data_bits.append(False)
+            else:
+                mask_bits.append(True)
+                data_bits.append(pixel)
+
+        data_bytes = data_bits.tobytes()
+        mask_bytes = mask_bits.tobytes()
+
+        expected_bytes = int(ceil(display_height / 8))
+
+        payload += data_bytes
+        if len(data_bytes) < expected_bytes:
+            payload += [0x00 for _ in range(expected_bytes - len(data_bytes))]
+        payload += mask_bytes
+        if len(data_bytes) < expected_bytes:
+            payload += [0x00 for _ in range(expected_bytes - len(data_bytes))]
+
+        super().__init__('Scroll', bytearray(payload))
+
+    def check_response(self, buffer: bytearray) -> CommandResult:
+            return self._check_single_byte_response(buffer)
+
+
 class SetAllLEDs(Command):
 
     def __init__(self, color: Tuple[int, int, int]):
@@ -311,7 +356,6 @@ class GetAllLEDs(Command):
             b = buffer[i * 3 + 2]
             self._colors.append((r,g,b))
         del buffer[0:self._expected_number*3]
-        print(self._colors)
         return CommandResult.success(result_data=self._colors)
 
     @property

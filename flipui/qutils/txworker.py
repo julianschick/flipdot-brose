@@ -9,7 +9,7 @@ class FlipdotTxWorker(QObject):
 
     def __init__(self, parent):
         QObject.__init__(self, parent)
-        self._url: str = 'flipdot42'
+        self._url: str = 'flipdot-km'
         self._port: int = 3000
         self._socket = QTcpSocket(self)
         self._socket.error.connect(self.__socketError)

@@ -56,20 +56,23 @@ class FlipdotDisplay(QObject):
 
     def test(self):
         #c = cx.SetLEDs([(1,0,255,0),(2,0,0,255)])
-        #c = cx.SetAllLEDs((255,0,0))
+        #c = cx.SetAllLEDs((0,0,0))
         #c = cx.SetPixelFlipSpeed(500);
         #c = cx.SetIncrementalMode(cx.DisplayMode.INCREMENTAL)
         #c = cx.SetPixelTransitionMode(cx.PixelTransitionMode.RANDOM)
 
-        commands = [
-            cx.GetLEDTransitionMode(),
-            cx.GetPixelTransitionMode(),
-            cx.GetPixelFlipSpeed(),
-            cx.GetIncrementalMode()
-        ]
+        #commands = [
+        #    cx.GetLEDTransitionMode(),
+        #    cx.GetPixelTransitionMode(),
+        #    cx.GetPixelFlipSpeed(),
+        #    cx.GetIncrementalMode()
+        #]
 
-        for c in commands:
-            self._tx_worker.sendCommand(QCommand(c, parent=self))
+        #for c in commands:
+        #    self._tx_worker.sendCommand(QCommand(c, parent=self))
+
+        c = cx.Scroll([False, False, None, False], 16)
+        self._tx_worker.sendCommand(QCommand(c, parent=self))
 
     # callbacks
     def callbackGetAllLEDs(self):
