@@ -36,15 +36,6 @@ class MainWindow(QMainWindow):
         self._dsp.fill()
 
     def testButtonClicked(self):
-        # f: 'PixelFont' = PixelFont('resources/octafont.png', {PixelFontVariant.NORMAL: 9, PixelFontVariant.BOLD: 0})
-        # img: Image = Image.new('RGB', (28 * 4, 16), (255, 255, 255))
-        #
-        # " 🡠 🡢 🡡 🡣 🡤 🡥 🡦 🡧  🡥🡢🡦🡣🡧🡠🡤💧"
-        # f.draw("🡡🡥🡢🡦🡣🡧🡠🡤\nFAT DROP 💧", img, Rect(0, 0, 1000, 16), variant=PixelFontVariant.NORMAL)
-        #
-        # bits = img_to_bitarray(img)
-        # self._dsp.show_bitset(bits)
-
         self._dsp.test()
 
 

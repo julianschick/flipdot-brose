@@ -94,11 +94,11 @@ class QCommand(QObject):
 
     def rxTimerTimeout(self):
         if self._state == State.RX_PENDING:
-            self._error(ErrorType.TIMED_OUT)
+            self._error(ErrorType.RX_TIMEOUT)
 
     def txTimerTimeout(self):
         if self._state == State.TX_PENDING:
-            self._error(ErrorType.TIMED_OUT)
+            self._error(ErrorType.TX_TIMEOUT)
 
     def check_response(self, buffer: bytearray) -> CommandResult:
         command_result: CommandResult = self._wrapped_command.check_response(buffer)

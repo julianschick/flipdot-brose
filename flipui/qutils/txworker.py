@@ -9,7 +9,7 @@ class FlipdotTxWorker(QObject):
 
     def __init__(self, parent):
         QObject.__init__(self, parent)
-        self._url: str = 'flipdot-km'
+        self._url: str = '192.168.178.22'
         self._port: int = 3000
         self._socket = QTcpSocket(self)
         self._socket.error.connect(self.__socketError)
@@ -37,10 +37,13 @@ class FlipdotTxWorker(QObject):
             print("re-establish")
             self._rxBuffer.clear()
             self._socket.connectToHost(self._url, self._port)
+            print("Queued: " + str(cmd))
             self._cmdList.append(cmd)
         elif self._socket.state() == QTcpSocket.HostLookupState:
+            print("Queued: " + str(cmd))
             self._cmdList.append(cmd)
         elif self._socket.state() == QTcpSocket.ConnectedState:
+            print("Queued: " + str(cmd))
             self._cmdList.append(cmd)
             self.__sendNext()
 
@@ -69,6 +72,7 @@ class FlipdotTxWorker(QObject):
             toSend.transmit(self._socket)
 
     def __socketConnected(self):
+        print("connected")
         self._restartTimer()
         self.__sendNext()
 
@@ -100,6 +104,7 @@ class FlipdotTxWorker(QObject):
                 r = cmd.check_response(self._rxBuffer)
                 if r.ok:
                     self._cmdList.remove(cmd)
+                    self.__sendNext()
                 else:
                     break
 

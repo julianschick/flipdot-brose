@@ -1,5 +1,11 @@
+from time import sleep
+
+from PIL import Image
 from PySide2.QtCore import QObject
 import commands as cx
+from gfx.bitarray_utils import img_to_bitarray
+from gfx.pixelfont import PixelFont, PixelFontVariant
+from gfx.rect import Rect
 from qutils.txworker import FlipdotTxWorker
 from qutils.qcommand import QCommand
 
@@ -55,6 +61,7 @@ class FlipdotDisplay(QObject):
         self._tx_worker.sendCommand(QCommand(cx.Fill(), parent=self))
 
     def test(self):
+        pass
         #c = cx.SetLEDs([(1,0,255,0),(2,0,0,255)])
         #c = cx.SetAllLEDs((0,0,0))
         #c = cx.SetPixelFlipSpeed(500);
@@ -71,8 +78,8 @@ class FlipdotDisplay(QObject):
         #for c in commands:
         #    self._tx_worker.sendCommand(QCommand(c, parent=self))
 
-        c = cx.Scroll([False, False, None, False], 16)
-        self._tx_worker.sendCommand(QCommand(c, parent=self))
+        #c = cx.Scroll([False, False, None, False], 16)
+        #self._tx_worker.sendCommand(QCommand(c, parent=self))
 
     # callbacks
     def callbackGetAllLEDs(self):
