@@ -1,4 +1,4 @@
-# flipdot-schematics
+# flipdot-brose
 Leiterplattenlayout für die Ansteuerung von Brose-Flipdotmodulen.
 
 ## Teileliste
